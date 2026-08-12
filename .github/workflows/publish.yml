@@ -64,19 +64,8 @@ jobs:
       - name: Publish new version
         if: steps.plan.outputs.should_publish == 'true'
         env:
-          PACKAGE_NAME: ${{ steps.plan.outputs.name }}
-          PACKAGE_VERSION: ${{ steps.plan.outputs.version }}
           DIST_TAG: ${{ steps.plan.outputs.dist_tag }}
-          FULL_SHA: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          npm publish --tag "$DIST_TAG" --provenance --access public
-          if [ "$CHANNEL" = "latest" ]; then
-            short_sha="$(printf '%s' "$FULL_SHA" | cut -c1-12)"
-            npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$FULL_SHA"
-            npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$short_sha"
-          fi
-          npm dist-tag ls "$PACKAGE_NAME"
+        run: npm publish --tag "$DIST_TAG" --provenance --access public
 
       - name: Skip publish
         if: steps.plan.outputs.should_publish != 'true'

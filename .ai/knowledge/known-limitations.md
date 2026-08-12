@@ -22,8 +22,9 @@ checker. Broken links and unexercised branches therefore require separate review
 
 A `package.json` version can be published only once. `development` publishes only prereleases as
 `dev`. `main` publishes only new stable versions as `latest`. Trusted publishing can publish a
-tarball; it cannot later move `latest` onto a version that was first published as `dev`. Evidence:
-`.github/scripts/resolve-publish.mjs` and `.github/workflows/publish.yml`.
+tarball with `--tag`; it cannot add extra `dist-tag` aliases or later move `latest` onto a
+version first published as `dev`. Evidence: `.github/scripts/resolve-publish.mjs` and
+`.github/workflows/publish.yml`.
 
 ## Release audit and tarball checks are partial
 

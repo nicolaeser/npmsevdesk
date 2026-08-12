@@ -51,6 +51,8 @@ npm artifact and reach the registry through the intended branch channel and OIDC
 - Does publishing use the `npm` environment, OIDC (`id-token: write`), and Action version tags
   such as `actions/checkout@v7.0.1`, without a long-lived `NPM_TOKEN`?
 - If the version already exists, is the job a clean skip rather than a `dist-tag` retag?
+- Does a successful publish rely only on `npm publish --tag` and not on extra `dist-tag add`
+  calls that OIDC cannot authenticate?
 - If build, pack, or publish becomes ambiguous, is the observation and patch-forward path safe and
   explicit?
 
