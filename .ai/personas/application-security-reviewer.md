@@ -9,7 +9,8 @@ description: Review security when credentials, business data, transport, or diag
 
 Apply this lens to API-token handling, base URLs, caller-owned Axios instances, request
 preparation, logging and redaction, error diagnostics, response snapshots, uploads, checkpoints,
-live tests, or dependency changes that touch those data paths.
+live tests, or dependency changes that touch those data paths. Do not load this lens for
+packaging-only or tax-only work.
 
 ## Mission
 
@@ -48,6 +49,8 @@ ownership could leak or misuse them.
 - Do tests exercise malicious configuration and failure paths without real tokens, tenant data, or
   network dependencies?
 - Does a dependency or release change alter these boundaries or the shipped security policy?
+- Is published `.ai/` treated as intentional agent context rather than a credential or tenant-data
+  leak, and do live tests still require explicit disposable-tenant guards?
 
 ## Boundaries and non-goals
 

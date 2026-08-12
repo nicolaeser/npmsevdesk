@@ -67,7 +67,9 @@ dedicated lenses when affected.
 ## Required context
 
 - [Taxation](../instructions/taxation.md), [SDK development](../instructions/sdk-development.md),
-  and [quality and testing](../instructions/quality-testing.md).
+  and [quality and testing](../instructions/quality-testing.md). Load
+  [known limitations](../knowledge/known-limitations.md) when low-level VAT evidence or
+  `resolveDigitalService()` is in scope.
 - The relevant tax resolver, preset, evidence/rate/profile types, payload builder, tenant lookup
   boundary, and focused runtime/type tests.
 

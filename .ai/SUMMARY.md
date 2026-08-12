@@ -49,7 +49,7 @@ stated activation matches the task.
   applied to transport, diagnostics, uploads, live tests, or sensitive data paths.
 - [delivery-reliability-reviewer.md](personas/delivery-reliability-reviewer.md) — Defines the
   source-to-registry readiness review method and must be loaded when that lens is applied to
-  builds, declarations, exports, CI, tarballs, tags, or publishing.
+  builds, declarations, exports, CI, tarballs, branch publish channels, or trusted publishing.
 - [remote-write-safety-reviewer.md](personas/remote-write-safety-reviewer.md) — Defines the
   mutation-ledger and ambiguity-recovery review method and must be loaded when that lens is applied
   to remote writes or multi-request workflows.
