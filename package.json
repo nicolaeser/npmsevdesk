@@ -1,6 +1,6 @@
 {
   "name": "npmsevdesk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Unofficial TypeScript Axios client for the sevdesk API.",
   "keywords": [
     "sevdesk",
@@ -124,11 +124,11 @@
     "axios": "^1.19.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
+    "@types/node": "^26.2.0",
     "publint": "^0.3.22",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.10"
   },
   "overrides": {
     "esbuild": "^0.28.1",
