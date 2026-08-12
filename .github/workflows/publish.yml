@@ -63,14 +63,6 @@ jobs:
 
       - name: Publish new version
         if: steps.plan.outputs.should_publish == 'true'
-        run: npm publish --tag "${{ steps.plan.outputs.dist_tag }}" --provenance --access public
-
-      - name: Skip republish of existing version
-        if: steps.plan.outputs.should_publish != 'true'
-        run: echo "${{ steps.plan.outputs.skip_reason }}"
-
-      - name: Point channel and SHA tags at this version
-        if: steps.plan.outputs.already_published == 'true' || steps.plan.outputs.should_publish == 'true'
         env:
           PACKAGE_NAME: ${{ steps.plan.outputs.name }}
           PACKAGE_VERSION: ${{ steps.plan.outputs.version }}
@@ -78,10 +70,14 @@ jobs:
           FULL_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
-          npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$DIST_TAG"
+          npm publish --tag "$DIST_TAG" --provenance --access public
           if [ "$CHANNEL" = "latest" ]; then
             short_sha="$(printf '%s' "$FULL_SHA" | cut -c1-12)"
             npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$FULL_SHA"
             npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$short_sha"
           fi
           npm dist-tag ls "$PACKAGE_NAME"
+
+      - name: Skip publish
+        if: steps.plan.outputs.should_publish != 'true'
+        run: echo "${{ steps.plan.outputs.skip_reason }}"
