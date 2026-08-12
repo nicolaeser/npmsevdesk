@@ -24,6 +24,18 @@ if (channel === "latest" && prerelease) {
   });
   process.exit(0);
 }
+if (channel === "dev" && !prerelease) {
+  writeOutput({
+    name,
+    version,
+    channel,
+    dist_tag: "dev",
+    should_publish: false,
+    already_published: false,
+    skip_reason: `Stable ${name}@${version} is reserved for main/latest. Use a prerelease such as ${version}-dev.0 for @dev.`
+  });
+  process.exit(0);
+}
 
 const existing = await publishedVersion(name, version);
 if (existing === "error") {
@@ -39,7 +51,7 @@ writeOutput({
   already_published: existing === true,
   skip_reason:
     existing === true
-      ? `${name}@${version} is already on the registry; tags will be updated without republishing.`
+      ? `${name}@${version} is already on the registry; skipping so this version is not retagged.`
       : ""
 });
 

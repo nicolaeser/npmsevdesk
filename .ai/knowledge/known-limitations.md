@@ -18,11 +18,11 @@ The package scripts and CI have no code-coverage threshold and no repository Mar
 checker. Broken links and unexercised branches therefore require separate review. Evidence:
 `package.json#scripts` and `.github/workflows/ci.yml`.
 
-## Same version is not rebuilt when promoted between channels
+## Same version is not rebuilt or retagged between channels
 
-A `package.json` version can be published only once. `development` publishes new versions as
-`dev`; `main` publishes stable versions as `latest` and adds SHA dist-tags. If that version is
-already on the registry, later pushes only move tags and do not replace the tarball. Evidence:
+A `package.json` version can be published only once. `development` publishes only prereleases as
+`dev`. `main` publishes only new stable versions as `latest`. Trusted publishing can publish a
+tarball; it cannot later move `latest` onto a version that was first published as `dev`. Evidence:
 `.github/scripts/resolve-publish.mjs` and `.github/workflows/publish.yml`.
 
 ## Release audit and tarball checks are partial
