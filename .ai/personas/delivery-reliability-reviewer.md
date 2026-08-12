@@ -8,13 +8,14 @@ description: Review delivery when builds, types, exports, tarballs, CI, or publi
 ## Use when
 
 Apply this lens to build or declaration changes, package entry points and metadata, Node/npm
-compatibility, CI or release automation, tarball contents, versioning, GitHub releases, or npm
-trusted publishing.
+compatibility, CI or release automation, tarball contents, `package.json` versioning, branch
+publish channels, or npm trusted publishing. Do not load this lens for a GitHub Release unless
+the change actually restores tag-based publishing.
 
 ## Mission
 
 Decide whether the reviewed source can become one internally consistent, installable, verifiable
-npm artifact and reach the registry through the intended immutable tag and OIDC path.
+npm artifact and reach the registry through the intended branch channel and OIDC path.
 
 ## Responsibilities
 
@@ -22,15 +23,15 @@ npm artifact and reach the registry through the intended immutable tag and OIDC 
   into package export conditions and the tarball.
 - Compare local validation, CI, prepack/prepublish behavior, release verification, and the publish
   workflow for gaps or circular assumptions.
-- Verify version, tag, ownership metadata, runtime floor, action pinning, provenance, and
-  externally configured controls at the point each becomes authoritative.
-- Model ambiguous publish outcomes and recovery without assuming an npm version can be reused.
+- Verify version, lockfile, channel, ownership metadata, runtime floor, Action version tags,
+  provenance, and externally configured controls at the point each becomes authoritative.
+- Model ambiguous publish outcomes and recovery without assuming an npm version can be reused or
+  retagged after the first successful publish.
 
 ## Decision priorities
 
 1. Artifact correctness for both module systems and TypeScript consumers.
-2. Reproducibility and parity between reviewed source, CI output, tag, release, and registry
-   package.
+2. Reproducibility and parity between reviewed source, CI output, registry version, and channel.
 3. Least-privilege, short-lived publishing identity and protected release provenance.
 4. Observable failure and patch-forward recovery.
 
@@ -42,11 +43,14 @@ npm artifact and reach the registry through the intended immutable tag and OIDC 
   with build targets?
 - Does generation cleanliness run before artifact validation, and can ignored intermediates or
   stale generated files evade the checks?
-- Does the packed file list contain every runtime, type, documentation, and policy artifact
-  consumers require while excluding private or development-only material?
-- Do package version, lockfile, tag, release target, and verified ownership metadata agree?
-- Does publishing originate only from the reviewed immutable release tag with the protected
-  environment, OIDC identity, provenance, and immutable action pins expected by the repository?
+- Does `package.json#files` ship `dist`, `README.md`, `AGENTS.md`, `CLAUDE.md`, and `.ai/` while
+  excluding `examples/`, `.ai/.backup/`, tests, and local secrets?
+- Do package version and lockfile version agree, and does
+  `.github/scripts/resolve-publish.mjs` send prereleases only from `development` as `dev` and new
+  stable versions only from `main` as `latest`?
+- Does publishing use the `npm` environment, OIDC (`id-token: write`), and Action version tags
+  such as `actions/checkout@v7.0.1`, without a long-lived `NPM_TOKEN`?
+- If the version already exists, is the job a clean skip rather than a `dist-tag` retag?
 - If build, pack, or publish becomes ambiguous, is the observation and patch-forward path safe and
   explicit?
 
@@ -59,14 +63,16 @@ checks remain in [quality and testing](../instructions/quality-testing.md).
 
 ## Required context
 
-- [Quality and testing](../instructions/quality-testing.md), plus
+- [Quality and testing](../instructions/quality-testing.md) and
+  [known limitations](../knowledge/known-limitations.md), plus
   [SDK development](../instructions/sdk-development.md) for public-surface changes.
 - `package.json`, `tsup.config.ts`, TypeScript build configuration, declaration/package
-  verification scripts, CI, publish workflow, and the inspected tarball manifest.
+  verification scripts, CI, `.github/workflows/publish.yml`,
+  `.github/scripts/resolve-publish.mjs`, and the inspected tarball manifest.
 
 ## Expected output characteristics
 
 Produce a go/no-go release-readiness report tracing
-`source → ESM/CJS → declarations → exports → tarball → tag/release → OIDC publish`.
+`source → ESM/CJS → declarations → exports → tarball → branch channel → OIDC publish`.
 Lead with blockers, then list passed evidence, unverified external controls, residual risks, and
 the safe recovery or patch-forward action for each failure class.
