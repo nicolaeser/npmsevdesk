@@ -1,0 +1,87 @@
+name: Publish npm package
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Trusted npm publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      CHANNEL: ${{ github.ref_name == 'main' && 'latest' || 'dev' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 24 and npm registry
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Use repository npm version
+        run: npm install --global npm@11.17.0
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Verify release metadata
+        run: npm run verify:release -- --channel "$CHANNEL"
+
+      - name: Run release gates
+        run: |
+          npm run check
+          npm audit --omit=dev --audit-level=high
+
+      - name: Inspect publishable package
+        run: npm pack --dry-run --ignore-scripts
+
+      - name: Resolve publish plan
+        id: plan
+        run: node .github/scripts/resolve-publish.mjs --channel "$CHANNEL" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Publish new version
+        if: steps.plan.outputs.should_publish == 'true'
+        run: npm publish --tag "${{ steps.plan.outputs.dist_tag }}" --provenance --access public
+
+      - name: Skip republish of existing version
+        if: steps.plan.outputs.should_publish != 'true'
+        run: echo "${{ steps.plan.outputs.skip_reason }}"
+
+      - name: Point channel and SHA tags at this version
+        if: steps.plan.outputs.already_published == 'true' || steps.plan.outputs.should_publish == 'true'
+        env:
+          PACKAGE_NAME: ${{ steps.plan.outputs.name }}
+          PACKAGE_VERSION: ${{ steps.plan.outputs.version }}
+          DIST_TAG: ${{ steps.plan.outputs.dist_tag }}
+          FULL_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$DIST_TAG"
+          if [ "$CHANNEL" = "latest" ]; then
+            short_sha="$(printf '%s' "$FULL_SHA" | cut -c1-12)"
+            npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$FULL_SHA"
+            npm dist-tag add "$PACKAGE_NAME@$PACKAGE_VERSION" "$short_sha"
+          fi
+          npm dist-tag ls "$PACKAGE_NAME"

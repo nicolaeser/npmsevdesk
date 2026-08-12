@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+openapi/generated/
+*.tgz
+.DS_Store
+.env
+.env.*
+.npmrc
+*.pem
+*.key
+.idea/
+.ai/.backup/
