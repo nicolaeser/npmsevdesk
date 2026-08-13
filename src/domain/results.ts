@@ -35,6 +35,10 @@ export type ContactListResult = PaginatedDomainResult<"getContacts", readonly Se
 export type ContactResult = DomainResult<"getContactById", SevdeskContact>;
 
 export type InvoiceListResult = PaginatedDomainResult<"getInvoices", readonly SevdeskInvoice[]>;
+export type InvoicePositionListResult = PaginatedDomainResult<
+  "getInvoicePositionsById",
+  readonly SevdeskInvoicePosition[]
+>;
 export type InvoiceResult = DomainResult<"getInvoiceById", SevdeskInvoice>;
 export type CreatedInvoiceResult = DomainResult<"createInvoiceByFactory", CreatedInvoice>;
 export type SentInvoiceResult = DomainResult<"invoiceSendBy", SevdeskInvoice>;

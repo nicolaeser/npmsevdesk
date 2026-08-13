@@ -10,6 +10,7 @@ import {
   normalizeCreatedVoucher,
   normalizeCreditNote,
   normalizeInvoice,
+  normalizeInvoicePosition,
   normalizeOrder,
   normalizePart,
   normalizeUser,
@@ -31,6 +32,7 @@ import type {
   CreditNoteListResult,
   CreditNoteResult,
   InvoiceListResult,
+  InvoicePositionListResult,
   InvoiceResult,
   OpenVoucherResult,
   OrderListResult,
@@ -72,6 +74,15 @@ export function mapInvoiceListResult(
 
 export function mapInvoiceResult(result: ResultFor<operations["getInvoiceById"]>): InvoiceResult {
   return mapResultData(result, normalizeInvoice(requireSingle(result.data, "invoice")));
+}
+
+export function mapInvoicePositionListResult(
+  result: ResultFor<operations["getInvoicePositionsById"]>
+): InvoicePositionListResult {
+  return mapPaginatedResultData(
+    result,
+    requireCollection(result.data, "invoice position").map(normalizeInvoicePosition)
+  );
 }
 
 export function mapCreatedInvoiceResult(

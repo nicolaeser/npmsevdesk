@@ -84,13 +84,17 @@ describe.skipIf(!writesEnabled)("sevdesk guarded live draft writes", () => {
       });
       invoiceId = numericId(created.data.invoice.id, "created invoice");
       expect(created.data.invoice.status).toBe("DRAFT");
-      const positionId = created.data.positions[0]?.id;
+      const listed = await requireLiveClient().invoices.listPositions(invoiceId, {
+        limit: 50,
+        countAll: true
+      });
+      expect(listed.pagination.returned).toBeGreaterThan(0);
+      expect(listed.data[0]?.objectName).toBe("InvoicePos");
+      const positionId = listed.data[0]?.id ?? created.data.positions[0]?.id;
       if (positionId !== undefined) {
         const updated = await requireLiveClient().invoices.updatePosition(
           numericId(positionId, "created invoice position"),
-          {
-          price: 2
-          }
+          { price: 2 }
         );
         expect(updated.data.receipt.operationId).toBe("updateInvoicePos");
       }

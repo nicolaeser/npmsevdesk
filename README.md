@@ -57,7 +57,7 @@ Copy-paste programs live in `examples/`. They compile against the public package
 - `05-exact-lookups.ts` — customer number, IBAN, part, country
 - `08-tax-resolution-and-json.ts` — sale tax plans
 - `12-tenant-identifiers.ts` — custom numbers vs `"RE"`
-- `13-sequences-users-and-dates.ts` — next numbers, users, dates, position update
+- `13-sequences-users-and-dates.ts` — next numbers, users, dates, invoice positions
 
 ## Requirements
 

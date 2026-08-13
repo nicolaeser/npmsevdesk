@@ -108,6 +108,17 @@ async function verifyCuratedAndRawContracts(): Promise<void> {
   void templateId;
   const enshrined = await client.invoices.enshrine(42);
   void enshrined.response.status;
+  const listedPositions = await client.invoices.listPositions(42, {
+    limit: 50,
+    countAll: true,
+    embed: ["part", "unity"]
+  });
+  const positionTaxRate: string | undefined = listedPositions.data[0]?.taxRate;
+  const positionPageTotal: number | undefined = listedPositions.pagination.total;
+  void positionTaxRate;
+  void positionPageTotal;
+  // @ts-expect-error invoice-position embeds are the reviewed relation names only
+  await client.invoices.listPositions(42, { embed: ["contact"] });
   await client.invoices.updatePosition(9, { price: 25 });
   await client.raw.invoicePos.updateInvoicePos({
     path: { invoicePosId: 9 },

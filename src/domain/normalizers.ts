@@ -18,6 +18,7 @@ import type {
   SevdeskContact,
   SevdeskCreditNote,
   SevdeskInvoice,
+  SevdeskInvoicePosition,
   SevdeskOrder,
   SevdeskPart,
   SevdeskUser,
@@ -284,6 +285,26 @@ export function normalizeCreatedCreditNote(
   return {
     creditNote: normalizeCreditNote(value.creditNote),
     positions: optionalCollection(value.creditNotePos, "credit-note positions")
+  };
+}
+
+export function normalizeInvoicePosition(
+  value: components["schemas"]["Model_InvoicePosResponse"]
+): SevdeskInvoicePosition {
+  const record = requireRecord(value, "invoice position");
+  if (record.objectName !== undefined) {
+    requireObjectName(record.objectName, "InvoicePos", "invoice position");
+  }
+  if (record.id === undefined) {
+    return {
+      ...record,
+      objectName: "InvoicePos"
+    };
+  }
+  return {
+    ...record,
+    id: requiredId(record.id, "invoice position"),
+    objectName: "InvoicePos"
   };
 }
 

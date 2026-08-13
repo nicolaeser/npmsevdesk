@@ -56,8 +56,11 @@ export type CreditNoteEmbed =
 
 export type PartEmbed = "category" | "sevClient" | "unity";
 
+export type InvoicePositionEmbed = "invoice" | "part" | "sevClient" | "unity";
+
 export type ContactEmbedInput = EmbedInput<ContactEmbed>;
 export type InvoiceEmbedInput = EmbedInput<InvoiceEmbed>;
+export type InvoicePositionEmbedInput = EmbedInput<InvoicePositionEmbed>;
 export type OrderEmbedInput = EmbedInput<OrderEmbed>;
 export type VoucherEmbedInput = EmbedInput<VoucherEmbed>;
 export type CreditNoteEmbedInput = EmbedInput<CreditNoteEmbed>;

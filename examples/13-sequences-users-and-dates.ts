@@ -52,13 +52,18 @@ try {
     ]
   });
   console.log(recurring.invoice.invoiceType, recurring.invoice.accountNextInvoice);
+  const positions = await client.invoices.listPositions(42, {
+    limit: 50,
+    countAll: true,
+    embed: ["part", "unity"]
+  });
+  console.log(positions.data[0]?.taxRate, positions.pagination);
   if (process.env.SEVDESK_ALLOW_DOCUMENT_WRITES === "true") {
     const invoiceId = 42;
-    await client.raw.invoicePos.updateInvoicePos({
-      path: { invoicePosId: 9 },
-      body: { price: 25 }
-    });
-    await client.invoices.updatePosition(9, { price: 25 });
+    const first = positions.data[0];
+    if (first?.id !== undefined) {
+      await client.invoices.updatePosition(Number(first.id), { price: 25 });
+    }
     await client.invoices.enshrine(invoiceId);
   }
 } finally {

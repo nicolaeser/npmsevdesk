@@ -202,6 +202,52 @@ describe("layout.findTemplate", () => {
   });
 });
 
+describe("invoice position list", () => {
+  it("lists positions for one invoice with pagination", async () => {
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) => {
+          expect(config.method).toBe("get");
+          expect(config.url).toBe("/Invoice/42/getPositions");
+          expect(config.params).toMatchObject({
+            limit: 50,
+            offset: 0,
+            countAll: true,
+            embed: ["part", "unity"]
+          });
+          return jsonResponse(config, {
+            objects: [
+              {
+                id: "9",
+                objectName: "InvoicePos",
+                taxRate: "19",
+                invoice: { id: "42", objectName: "Invoice" }
+              }
+            ],
+            total: 1
+          });
+        })
+      })
+    });
+    const listed = await client.invoices.listPositions("42", {
+      limit: 50,
+      offset: 0,
+      countAll: true,
+      embed: ["part", "unity"]
+    });
+    expect(listed.data).toHaveLength(1);
+    expect(listed.data[0]?.id).toBe("9");
+    expect(listed.data[0]?.objectName).toBe("InvoicePos");
+    expect(listed.data[0]?.taxRate).toBe("19");
+    expect(listed.pagination).toMatchObject({ limit: 50, offset: 0, total: 1, returned: 1 });
+    expect(listed.objects[0]?.id).toBe("9");
+    await expect(client.invoices.listPositions(42, { limit: 0 })).rejects.toBeInstanceOf(
+      SevdeskConfigurationError
+    );
+  });
+});
+
 describe("invoice enshrine and position update", () => {
   it("enshrines through the generated invoiceEnshrine operation", async () => {
     const calls: string[] = [];
