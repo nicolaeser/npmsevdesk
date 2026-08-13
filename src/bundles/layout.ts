@@ -67,6 +67,11 @@ export interface LayoutTemplateListOptions {
   readonly type?: LayoutTemplateType;
 }
 
+export interface LayoutTemplateFindInput {
+  readonly name: string;
+  readonly type?: LayoutTemplateType;
+}
+
 type TemplatesJson = ResponseJsonFor<operations["getTemplates"]>;
 type TemplateWire = NonNullable<NonNullable<TemplatesJson>["templates"]>[number];
 
@@ -204,6 +209,24 @@ export class LayoutBundle {
       )
     );
     return mapResultData(result, normalizeTemplates(result.json));
+  }
+  public async findTemplate(
+    input: LayoutTemplateFindInput,
+    requestOptions?: CuratedRequestOptions
+  ): Promise<LayoutTemplate | undefined> {
+    const name = requiredTemplateName(input.name);
+    const listed = await this.listTemplates(
+      input.type === undefined ? {} : { type: input.type },
+      requestOptions
+    );
+    const matches = listed.data.filter((template) => (template.name ?? "").trim() === name);
+    if (matches.length === 0) return undefined;
+    if (matches.length > 1) {
+      throw new SevdeskConfigurationError(
+        `Multiple layout templates matched name "${name}"${input.type === undefined ? "" : ` for type ${input.type}`}.`
+      );
+    }
+    return matches[0];
   }
   public async listLetterpapers(
     requestOptions?: CuratedRequestOptions
@@ -412,29 +435,42 @@ const LAYOUT_LANGUAGES = new Set<string>(Object.values(LayoutLanguage));
 const LAYOUT_PAYPAL_MODES = new Set<string>(Object.values(LayoutPayPalMode));
 
 function normalizeTemplates(json: TemplatesJson): readonly LayoutTemplate[] {
-  if (!Array.isArray(json.templates)) {
-    throw new SevdeskResponseValidationError(
-      "sevdesk returned a template response without a templates collection.",
-      { value: json }
-    );
-  }
-  return json.templates.map((template, index) => ({
+  return layoutCollection(json, "templates", "template").map((template, index) => ({
     ...template,
     id: responseId(template, `template at index ${index}`)
   }));
 }
 
 function normalizeLetterpapers(json: LetterpapersJson): readonly LayoutLetterpaper[] {
-  if (!Array.isArray(json.letterpapers)) {
-    throw new SevdeskResponseValidationError(
-      "sevdesk returned a letterpaper response without a letterpapers collection.",
-      { value: json }
-    );
-  }
-  return json.letterpapers.map((letterpaper, index) => ({
+  return layoutCollection(json, "letterpapers", "letterpaper").map((letterpaper, index) => ({
     ...letterpaper,
     id: responseId(letterpaper, `letterpaper at index ${index}`)
   }));
+}
+
+function layoutCollection<TKey extends "templates" | "letterpapers">(
+  json: unknown,
+  key: TKey,
+  label: string
+): readonly (TKey extends "templates" ? TemplateWire : LetterpaperWire)[] {
+  const record = asRecord(json);
+  const direct = record?.[key];
+  if (Array.isArray(direct)) {
+    return direct as readonly (TKey extends "templates" ? TemplateWire : LetterpaperWire)[];
+  }
+  const wrapped = asRecord(record?.objects)?.[key];
+  if (Array.isArray(wrapped)) {
+    return wrapped as readonly (TKey extends "templates" ? TemplateWire : LetterpaperWire)[];
+  }
+  throw new SevdeskResponseValidationError(
+    `sevdesk returned a ${label} response without a ${key} collection.`,
+    { value: json }
+  );
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return undefined;
+  return value as Record<string, unknown>;
 }
 
 function responseId(value: unknown, label: string): string {
@@ -457,4 +493,11 @@ function nonEmpty(value: string, label: string): string {
     throw new SevdeskConfigurationError(`Layout ${label} must be a non-empty string.`);
   }
   return value;
+}
+
+function requiredTemplateName(value: unknown): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new SevdeskConfigurationError("layout.findTemplate requires a non-empty name.");
+  }
+  return value.trim();
 }

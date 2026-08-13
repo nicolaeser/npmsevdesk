@@ -1,8 +1,9 @@
 import { afterAll, describe, expect, it } from "vitest";
-import { TaxRule } from "../src/enums/domain-enums.js";
+import { InvoiceType, RecurringInterval, TaxRule } from "../src/enums/domain-enums.js";
 import { createSevdeskClient } from "../src/client/sevdesk-client.js";
 import { taxes } from "../src/taxes/presets.js";
 import { refs } from "../src/types/references.js";
+import { formatSevdeskDate } from "../src/utils/date.js";
 
 const WRITE_CONFIRMATION = "CREATE_AND_CLEAN_NPMSEVDESK_TEST_DRAFTS";
 const VOUCHER_CONFIRMATION = "LEAVE_MARKED_NPMSEVDESK_VOUCHER_DRAFT";
@@ -61,7 +62,7 @@ describe.skipIf(!writesEnabled)("sevdesk guarded live draft writes", () => {
     try {
       const created = await requireLiveClient().invoices.create({
         invoice: {
-          invoiceDate: sevdeskDate(new Date()),
+          invoiceDate: formatSevdeskDate(),
           header: `${marker} invoice draft`,
           contact: refs.contact(contactId),
           contactPerson: refs.sevUser(sevUserId),
@@ -83,6 +84,55 @@ describe.skipIf(!writesEnabled)("sevdesk guarded live draft writes", () => {
       });
       invoiceId = numericId(created.data.invoice.id, "created invoice");
       expect(created.data.invoice.status).toBe("DRAFT");
+      const positionId = created.data.positions[0]?.id;
+      if (positionId !== undefined) {
+        const updated = await requireLiveClient().invoices.updatePosition(
+          numericId(positionId, "created invoice position"),
+          {
+          price: 2
+          }
+        );
+        expect(updated.data.receipt.operationId).toBe("updateInvoicePos");
+      }
+    } finally {
+      if (invoiceId !== undefined) {
+        await requireLiveClient().raw.invoice.deleteInvoiceById({ path: { invoiceId } });
+      }
+    }
+  });
+  it("creates a marked recurring draft with accountNextInvoice and deletes it", async () => {
+    const contactId = requiredId("SEVDESK_LIVE_INVOICE_CONTACT_ID");
+    const sevUserId = requiredId("SEVDESK_LIVE_SEV_USER_ID");
+    const unityId = requiredId("SEVDESK_LIVE_UNITY_ID");
+    let invoiceId: number | undefined;
+    try {
+      const created = await requireLiveClient().invoices.create({
+        invoice: {
+          invoiceDate: formatSevdeskDate(),
+          header: `${marker} recurring draft`,
+          contact: refs.contact(contactId),
+          contactPerson: refs.sevUser(sevUserId),
+          currency: "EUR",
+          invoiceType: InvoiceType.RECURRING,
+          accountIntervall: RecurringInterval.MONTHLY,
+          accountNextInvoice: new Date(),
+          tax: taxes.manual.sales({
+            bookkeepingSystem: "2.0",
+            taxRule: TaxRule.STANDARD_TAXABLE
+          })
+        },
+        positions: [
+          {
+            name: `${marker} recurring position`,
+            quantity: 1,
+            price: 1,
+            taxRate: 19,
+            unity: refs.unity(unityId)
+          }
+        ]
+      });
+      invoiceId = numericId(created.data.invoice.id, "created recurring invoice");
+      expect(created.data.invoice.semantic.invoiceType?.code).toBe("WKR");
     } finally {
       if (invoiceId !== undefined) {
         await requireLiveClient().raw.invoice.deleteInvoiceById({ path: { invoiceId } });
@@ -96,7 +146,7 @@ describe.skipIf(!voucherEnabled)("sevdesk strongly guarded voucher draft write",
     const accountDatevId = requiredId("SEVDESK_LIVE_ACCOUNT_DATEV_ID");
     const created = await requireLiveClient().vouchers.create({
       voucher: {
-        voucherDate: sevdeskDate(new Date()),
+        voucherDate: formatSevdeskDate(),
         supplierName: `${marker} voucher draft - SAFE TO DELETE`,
         creditDebit: "expense",
         status: "draft",
@@ -147,8 +197,4 @@ function numericId(value: string | number, label: string): number {
   return parsed;
 }
 
-function sevdeskDate(value: Date): string {
-  const day = String(value.getDate()).padStart(2, "0");
-  const month = String(value.getMonth() + 1).padStart(2, "0");
-  return `${day}.${month}.${value.getFullYear()}`;
-}
+

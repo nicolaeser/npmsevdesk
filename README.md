@@ -30,13 +30,13 @@ client.dispose();
 
 ## What to call
 
-- `client.contacts`, `invoices`, `orders`, `creditNotes`, `vouchers`, `payments`, `reminders`, `layout`, and `parts` for the modeled business flows. The same objects are also on `client.bundles`.
+- `client.contacts`, `invoices`, `orders`, `creditNotes`, `vouchers`, `payments`, `reminders`, `layout`, `parts`, `sequences`, and `users` for the modeled business flows. The same objects are also on `client.bundles`.
 - `client.lookup` when you have an exact customer number, IBAN, part number, or country code. Strict lookups fail on zero or multiple matches; `find*` only makes “not found” optional.
 - `client.taxes` for German sale plans and priced lines. Prefer `resolveSale()` / `quoteSale()`.
 - `client.raw.<resource>.<operationId>({ path, query, body })` for one generated OpenAPI call. Keep that envelope; do not flatten it.
 - `client.request()` only for an endpoint that is not generated.
 
-Check accounts, transactions, exports, reports, tags, text templates, and SevUsers have no curated module. Use `client.raw`.
+Check accounts, transactions, exports, reports, tags, and text templates have no curated module. Use `client.raw`.
 
 Curated `result.data` is the normalized view. `objects`, `json`, and `raw` stay wire-shaped. Status is `{ status, statusCode, statusKnown }`. Other coded fields live under `semantic.<field>`.
 
@@ -57,6 +57,7 @@ Copy-paste programs live in `examples/`. They compile against the public package
 - `05-exact-lookups.ts` — customer number, IBAN, part, country
 - `08-tax-resolution-and-json.ts` — sale tax plans
 - `12-tenant-identifiers.ts` — custom numbers vs `"RE"`
+- `13-sequences-users-and-dates.ts` — next numbers, users, dates, position update
 
 ## Requirements
 

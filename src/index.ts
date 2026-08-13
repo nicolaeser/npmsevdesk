@@ -40,6 +40,7 @@ export {
   resolveLogging,
   serializeQuery,
   shouldEmitLog,
+  formatSevdeskDate,
   toUnixTimestamp,
   validateLoggingConfig
 } from "./utils/index.js";

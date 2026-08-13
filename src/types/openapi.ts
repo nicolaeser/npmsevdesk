@@ -272,6 +272,9 @@ export interface paths {
   "/InvoicePos": {
     get: operations["getInvoicePos"];
   };
+  "/InvoicePos/{invoicePosId}": {
+    put: operations["updateInvoicePos"];
+  };
   "/DocServer/getLetterpapersWithThumb": {
     get: operations["getLetterpapersWithThumb"];
   };
@@ -6318,6 +6321,39 @@ export interface operations {
         content: never;
       };
       401: {
+        content: never;
+      };
+      500: {
+        content: never;
+      };
+    };
+  };
+  updateInvoicePos: {
+    parameters: {
+      path: {
+        invoicePosId: number;
+      };
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["Model_InvoicePosUpdate"];
+      };
+    };
+    responses: {
+      200: {
+        content: {
+          "application/json": {
+            objects?: components["schemas"]["Model_InvoicePosResponse"][];
+          };
+        };
+      };
+      400: {
+        content: never;
+      };
+      401: {
+        content: never;
+      };
+      404: {
         content: never;
       };
       500: {

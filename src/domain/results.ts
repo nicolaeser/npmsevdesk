@@ -11,6 +11,7 @@ import type {
   SevdeskOrder,
   SevdeskOrderPosition,
   SevdeskPart,
+  SevdeskUser,
   SevdeskVoucher,
   SevdeskVoucherPosition
 } from "./models.js";
@@ -63,6 +64,10 @@ export type PartResult = DomainResult<"getPartById", SevdeskPart>;
 export type PartStockResult = DomainResult<"partGetStock", number>;
 export type CreatedPartResult = DomainResult<"createPart", SevdeskPart>;
 export type UpdatedPartResult = DomainResult<"updatePart", SevdeskPart>;
+
+export type UserListResult = PaginatedDomainResult<"getSevUsers", readonly SevdeskUser[]>;
+export type UserResult = DomainResult<"getSevUserById", SevdeskUser>;
+export type NextCustomerNumberResult = DomainResult<"getNextCustomerNumber", string>;
 
 export interface CreatedInvoice {
   readonly invoice: SevdeskInvoice;

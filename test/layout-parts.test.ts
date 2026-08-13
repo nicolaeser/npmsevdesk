@@ -55,6 +55,24 @@ describe("layout and parts curated helpers", () => {
       SevdeskConfigurationError
     );
   });
+  it("reads templates wrapped in the live objects envelope", async () => {
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) =>
+          jsonResponse(config, {
+            objects: {
+              templates: [{ id: "tpl-live", name: "Standard", type: "Invoice" }]
+            }
+          })
+        )
+      })
+    });
+    const listed = await client.layout.listTemplates({ type: "Invoice" });
+    expect(listed.data[0]?.id).toBe("tpl-live");
+    const found = await client.layout.findTemplate({ type: "Invoice", name: "Standard" });
+    expect(found?.id).toBe("tpl-live");
+  });
   it("lists and gets parts", async () => {
     const client = createSevdeskClient({
       apiToken: "test-token",

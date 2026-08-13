@@ -20,6 +20,7 @@ import type {
   SevdeskInvoice,
   SevdeskOrder,
   SevdeskPart,
+  SevdeskUser,
   SevdeskVoucher,
   SemanticCode,
   SendSemanticCode
@@ -283,6 +284,21 @@ export function normalizeCreatedCreditNote(
   return {
     creditNote: normalizeCreditNote(value.creditNote),
     positions: optionalCollection(value.creditNotePos, "credit-note positions")
+  };
+}
+
+export function normalizeUser(
+  value: components["schemas"]["Model_SevUserResponse"]
+): SevdeskUser {
+  const record = requireRecord(value, "sevUser");
+  const { id, objectName: _objectName, ...user } = record;
+  if (_objectName !== undefined) {
+    requireObjectName(_objectName, "SevUser", "sevUser");
+  }
+  return {
+    ...user,
+    id: requiredId(id, "sevUser"),
+    objectName: "SevUser"
   };
 }
 

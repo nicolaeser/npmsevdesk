@@ -8,4 +8,9 @@ export class InvoicePosResource extends BaseResource {
   ): Promise<ResultFor<operations["getInvoicePos"]>> {
     return this.call("getInvoicePos", request);
   }
+  updateInvoicePos(
+    request: RequestFor<operations["updateInvoicePos"]>
+  ): Promise<ResultFor<operations["updateInvoicePos"]>> {
+    return this.call("updateInvoicePos", request);
+  }
 }

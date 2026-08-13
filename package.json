@@ -1,6 +1,6 @@
 {
   "name": "npmsevdesk",
-  "version": "0.1.2",
+  "version": "0.2.0-dev.0",
   "description": "Unofficial TypeScript Axios client for the sevdesk API.",
   "keywords": [
     "sevdesk",
@@ -113,8 +113,8 @@
     "typecheck": "tsc --noEmit",
     "typecheck:examples": "tsc -p examples/tsconfig.json",
     "test": "vitest run",
-    "test:live:read": "vitest run --fileParallelism false --maxWorkers 1 --testTimeout 60000 --hookTimeout 60000 test/read-only.live.ts",
-    "test:live:write": "vitest run --fileParallelism false --maxWorkers 1 --testTimeout 60000 --hookTimeout 60000 test/write.live.ts",
+    "test:live:read": "NPMSEVDESK_TEST_SUITE=live-read vitest run --fileParallelism false --maxWorkers 1 --testTimeout 60000 --hookTimeout 60000",
+    "test:live:write": "NPMSEVDESK_TEST_SUITE=live-write vitest run --fileParallelism false --maxWorkers 1 --testTimeout 60000 --hookTimeout 60000",
     "verify:package": "node .github/scripts/verify-package-exports.mjs",
     "check": "npm run typecheck && npm run typecheck:examples && npm run test && npm run build && npm run verify:package && publint",
     "prepack": "npm run build && npm run verify:package",

@@ -2,7 +2,8 @@ import type { SevdeskClient } from "../client/sevdesk-client.js";
 import type { SevdeskContact } from "../domain/models.js";
 import { mapContactListResult, mapContactResult } from "../domain/result-mappers.js";
 import { requireValue } from "../domain/normalizers.js";
-import type { ContactListResult, ContactResult } from "../domain/results.js";
+import type { ContactListResult, ContactResult, NextCustomerNumberResult } from "../domain/results.js";
+import { mapResultData } from "../utils/result.js";
 import {
   CommunicationWayKeyName,
   CommunicationWayType,
@@ -178,6 +179,14 @@ export class ContactsBundle {
     requestOptions?: CuratedRequestOptions
   ): Promise<ContactUpsertResult<ContactUpsertInput<TCreate, TMerge>, TOptions>> {
     return this.upserts.upsert(input, options, requestOptions);
+  }
+  public async nextCustomerNumber(
+    requestOptions?: CuratedRequestOptions
+  ): Promise<NextCustomerNumberResult> {
+    const result = await this.client.raw.contact.getNextCustomerNumber(
+      asRequest<"getNextCustomerNumber">({}, requestOptions)
+    );
+    return mapResultData(result, readNextCustomerNumber(result.data));
   }
   public async list(
     options: ContactListOptions = {},
@@ -442,10 +451,7 @@ export class ContactsBundle {
           asRequest<"getNextCustomerNumber">({}, requestOptions)
         )
       );
-      if (typeof result.data !== "string" || !result.data) {
-        throw new SevdeskConfigurationError("sevdesk returned no next customer number.");
-      }
-      return result.data;
+      return readNextCustomerNumber(result.data);
     }
     if (requested && options.validateCustomerNumber !== false) {
       const result = await context.step(
@@ -599,6 +605,14 @@ function normalizeCreatedAccountingContact(
     id: String(id),
     objectName: "AccountingContact"
   };
+}
+
+export function readNextCustomerNumber(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string" && value.trim() !== "") return value.trim();
+  throw new SevdeskResponseValidationError("sevdesk returned no next customer number.", {
+    value
+  });
 }
 
 function refineCompleteContactWorkflow<TInput extends CompleteContactInput>(

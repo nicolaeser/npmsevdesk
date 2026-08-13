@@ -13,6 +13,8 @@ export * from "./parts.js";
 export type * from "./payload-types.js";
 export * from "./payments.js";
 export * from "./reminders.js";
+export * from "./sequences.js";
 export type * from "./types.js";
+export * from "./users.js";
 export * from "./vouchers.js";
 export { SevdeskWorkflowError } from "./workflow.js";

@@ -1,4 +1,12 @@
-import { BookingType, SendType, TaxRate, createSevdeskClient, refs, taxes } from "npmsevdesk";
+import {
+  BookingType,
+  SendType,
+  TaxRate,
+  createSevdeskClient,
+  formatSevdeskDate,
+  refs,
+  taxes
+} from "npmsevdesk";
 
 const apiToken = process.env.SEVDESK_API_TOKEN;
 
@@ -8,12 +16,7 @@ if (!apiToken) {
 
 const client = createSevdeskClient({ apiToken });
 const now = new Date();
-const invoiceDate = new Intl.DateTimeFormat("de-DE", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  timeZone: "UTC"
-}).format(now);
+const invoiceDate = formatSevdeskDate(now);
 
 try {
   const { data: tax } = await client.taxes.resolve(

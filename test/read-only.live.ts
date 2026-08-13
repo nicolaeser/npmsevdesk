@@ -1,5 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
+import { InvoiceType } from "../src/enums/domain-enums.js";
 import { createSevdeskClient } from "../src/client/sevdesk-client.js";
+import { formatSevdeskDate } from "../src/utils/date.js";
 
 const apiToken = process.env.SEVDESK_LIVE_API_TOKEN;
 const enabled = typeof apiToken === "string" && apiToken.trim().length > 0;
@@ -33,6 +35,38 @@ describe.skipIf(!enabled)("sevdesk read-only live contract", () => {
     });
     expect(result.raw.status).toBe(200);
     expect(Array.isArray(result.data)).toBe(true);
+  });
+  it("formats the next official invoice number from the tenant sequence", async () => {
+    const result = await requireLiveClient().sequences.next({
+      objectType: "Invoice",
+      type: InvoiceType.NORMAL
+    });
+    expect(result.raw.status).toBe(200);
+    expect(result.data.sequence.objectName).toBe("SevSequence");
+    expect(result.data.format.includes("%NUMBER") || result.data.formatted.length > 0).toBe(true);
+    expect(result.data.formatted).toBeTruthy();
+    expect(result.data.type).toBe("RE");
+  });
+  it("lists SevUsers and the next customer number", async () => {
+    const users = await requireLiveClient().users.list({ limit: 1, countAll: true });
+    expect(users.raw.status).toBe(200);
+    expect(users.data[0]?.objectName).toBe("SevUser");
+    const next = await requireLiveClient().contacts.nextCustomerNumber();
+    expect(next.raw.status).toBe(200);
+    expect(next.data).toMatch(/^\d+$/);
+  });
+  it("can select a layout template by name when the tenant has one", async () => {
+    const listed = await requireLiveClient().layout.listTemplates({ type: "Invoice" });
+    expect(listed.raw.status).toBe(200);
+    const first = listed.data[0];
+    if (first?.name) {
+      const found = await requireLiveClient().layout.findTemplate({
+        type: "Invoice",
+        name: first.name
+      });
+      expect(found?.id).toBe(first.id);
+    }
+    expect(formatSevdeskDate(new Date(2026, 7, 13, 12, 0, 0))).toBe("13.08.2026");
   });
 });
 
