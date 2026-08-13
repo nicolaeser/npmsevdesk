@@ -14,6 +14,11 @@ import {
   normalizeOrder,
   normalizePart,
   normalizeUser,
+  normalizeCheckAccount,
+  normalizeTransaction,
+  normalizeTag,
+  normalizeTagRelation,
+  normalizeTextTemplate,
   normalizeVoucher,
   requireCollection,
   requireSingle,
@@ -46,6 +51,24 @@ import type {
   UpdatedPartResult,
   UserListResult,
   UserResult,
+  CheckAccountListResult,
+  CheckAccountResult,
+  CreatedClearingAccountResult,
+  CreatedFileImportAccountResult,
+  UpdatedCheckAccountResult,
+  CheckAccountBalanceResult,
+  TransactionListResult,
+  TransactionResult,
+  CreatedTransactionResult,
+  UpdatedTransactionResult,
+  TagListResult,
+  TagResult,
+  TagRelationListResult,
+  CreatedTagResult,
+  UpdatedTagResult,
+  TextTemplateListResult,
+  CreatedTextTemplateResult,
+  UpdatedTextTemplateResult,
   VoucherListResult,
   VoucherResult
 } from "./results.js";
@@ -218,4 +241,134 @@ export function mapUserListResult(result: ResultFor<operations["getSevUsers"]>):
 
 export function mapUserResult(result: ResultFor<operations["getSevUserById"]>): UserResult {
   return mapResultData(result, normalizeUser(requireSingle(result.data, "sevUser")));
+}
+
+export function mapCheckAccountListResult(
+  result: ResultFor<operations["getCheckAccounts"]>
+): CheckAccountListResult {
+  return mapPaginatedResultData(
+    result,
+    requireCollection(result.data, "check account").map(normalizeCheckAccount)
+  );
+}
+
+export function mapCheckAccountResult(
+  result: ResultFor<operations["getCheckAccountById"]>
+): CheckAccountResult {
+  return mapResultData(
+    result,
+    normalizeCheckAccount(requireSingle(result.data, "check account"))
+  );
+}
+
+export function mapCreatedClearingAccountResult(
+  result: ResultFor<operations["createClearingAccount"]>
+): CreatedClearingAccountResult {
+  return mapResultData(result, normalizeCheckAccount(requireValue(result.data, "check account")));
+}
+
+export function mapCreatedFileImportAccountResult(
+  result: ResultFor<operations["createFileImportAccount"]>
+): CreatedFileImportAccountResult {
+  return mapResultData(result, normalizeCheckAccount(requireValue(result.data, "check account")));
+}
+
+export function mapUpdatedCheckAccountResult(
+  result: ResultFor<operations["updateCheckAccount"]>
+): UpdatedCheckAccountResult {
+  return mapResultData(result, normalizeCheckAccount(requireValue(result.data, "check account")));
+}
+
+export function mapCheckAccountBalanceResult(
+  result: ResultFor<operations["getBalanceAtDate"]>
+): CheckAccountBalanceResult {
+  const balance = requireValue(result.data, "check-account balance");
+  if (typeof balance !== "string" && typeof balance !== "number") {
+    throw new SevdeskResponseValidationError("sevdesk returned an invalid check-account balance.", {
+      value: result.data
+    });
+  }
+  return mapResultData(result, String(balance));
+}
+
+export function mapTransactionListResult(
+  result: ResultFor<operations["getTransactions"]>
+): TransactionListResult {
+  return mapPaginatedResultData(
+    result,
+    requireCollection(result.data, "check-account transaction").map(normalizeTransaction)
+  );
+}
+
+export function mapTransactionResult(
+  result: ResultFor<operations["getCheckAccountTransactionById"]>
+): TransactionResult {
+  return mapResultData(
+    result,
+    normalizeTransaction(requireSingle(result.data, "check-account transaction"))
+  );
+}
+
+export function mapCreatedTransactionResult(
+  result: ResultFor<operations["createTransaction"]>
+): CreatedTransactionResult {
+  return mapResultData(
+    result,
+    normalizeTransaction(requireValue(result.data, "check-account transaction"))
+  );
+}
+
+export function mapUpdatedTransactionResult(
+  result: ResultFor<operations["updateCheckAccountTransaction"]>
+): UpdatedTransactionResult {
+  return mapResultData(
+    result,
+    normalizeTransaction(requireValue(result.data, "check-account transaction"))
+  );
+}
+
+export function mapTagListResult(result: ResultFor<operations["getTags"]>): TagListResult {
+  return mapPaginatedResultData(result, requireCollection(result.data, "tag").map(normalizeTag));
+}
+
+export function mapTagResult(result: ResultFor<operations["getTagById"]>): TagResult {
+  return mapResultData(result, normalizeTag(requireSingle(result.data, "tag")));
+}
+
+export function mapTagRelationListResult(
+  result: ResultFor<operations["getTagRelations"]>
+): TagRelationListResult {
+  return mapPaginatedResultData(
+    result,
+    requireCollection(result.data, "tag relation").map(normalizeTagRelation)
+  );
+}
+
+export function mapCreatedTagResult(result: ResultFor<operations["createTag"]>): CreatedTagResult {
+  return mapResultData(result, normalizeTagRelation(requireValue(result.data, "tag relation")));
+}
+
+export function mapUpdatedTagResult(result: ResultFor<operations["updateTag"]>): UpdatedTagResult {
+  return mapResultData(result, normalizeTag(requireValue(result.data, "tag")));
+}
+
+export function mapTextTemplateListResult(
+  result: ResultFor<operations["getTextTemplate"]>
+): TextTemplateListResult {
+  return mapPaginatedResultData(
+    result,
+    requireCollection(result.data, "text template").map(normalizeTextTemplate)
+  );
+}
+
+export function mapCreatedTextTemplateResult(
+  result: ResultFor<operations["addTextTemplate"]>
+): CreatedTextTemplateResult {
+  return mapResultData(result, normalizeTextTemplate(requireValue(result.data, "text template")));
+}
+
+export function mapUpdatedTextTemplateResult(
+  result: ResultFor<operations["updateTextTemplate"]>
+): UpdatedTextTemplateResult {
+  return mapResultData(result, normalizeTextTemplate(requireValue(result.data, "text template")));
 }

@@ -1,13 +1,19 @@
 import type { AxiosInstance } from "axios";
+import { CheckAccountsBundle } from "../bundles/check-accounts.js";
 import { ContactsBundle } from "../bundles/contacts.js";
 import { CreditNotesBundle } from "../bundles/credit-notes.js";
+import { ExportsBundle } from "../bundles/exports.js";
 import { InvoicesBundle } from "../bundles/invoices.js";
 import { LayoutBundle } from "../bundles/layout.js";
 import { OrdersBundle } from "../bundles/orders.js";
 import { PartsBundle } from "../bundles/parts.js";
 import { PaymentsBundle } from "../bundles/payments.js";
 import { RemindersBundle } from "../bundles/reminders.js";
+import { ReportsBundle } from "../bundles/reports.js";
 import { SequencesBundle } from "../bundles/sequences.js";
+import { TagsBundle } from "../bundles/tags.js";
+import { TextTemplatesBundle } from "../bundles/text-templates.js";
+import { TransactionsBundle } from "../bundles/transactions.js";
 import { UsersBundle } from "../bundles/users.js";
 import { VouchersBundle } from "../bundles/vouchers.js";
 import { LookupModule } from "../lookup/lookup.js";
@@ -43,6 +49,12 @@ export class SevdeskClient implements OperationExecutor {
   public readonly parts: PartsBundle;
   public readonly sequences: SequencesBundle;
   public readonly users: UsersBundle;
+  public readonly checkAccounts: CheckAccountsBundle;
+  public readonly transactions: TransactionsBundle;
+  public readonly exports: ExportsBundle;
+  public readonly reports: ReportsBundle;
+  public readonly tags: TagsBundle;
+  public readonly textTemplates: TextTemplatesBundle;
   public readonly lookup: LookupModule;
   public readonly taxes: TaxesModule;
   public readonly bundles: {
@@ -57,6 +69,12 @@ export class SevdeskClient implements OperationExecutor {
     readonly parts: PartsBundle;
     readonly sequences: SequencesBundle;
     readonly users: UsersBundle;
+    readonly checkAccounts: CheckAccountsBundle;
+    readonly transactions: TransactionsBundle;
+    readonly exports: ExportsBundle;
+    readonly reports: ReportsBundle;
+    readonly tags: TagsBundle;
+    readonly textTemplates: TextTemplatesBundle;
   };
   private readonly transport: AxiosTransport;
   public constructor(config: SevdeskClientConfig) {
@@ -75,6 +93,12 @@ export class SevdeskClient implements OperationExecutor {
     this.parts = new PartsBundle(this);
     this.sequences = new SequencesBundle(this);
     this.users = new UsersBundle(this);
+    this.checkAccounts = new CheckAccountsBundle(this);
+    this.transactions = new TransactionsBundle(this);
+    this.exports = new ExportsBundle(this);
+    this.reports = new ReportsBundle(this);
+    this.tags = new TagsBundle(this);
+    this.textTemplates = new TextTemplatesBundle(this);
     this.lookup = new LookupModule(this);
     this.taxes = new TaxesModule(this, {
       ...(config.taxRateSource === undefined ? {} : { rateSource: config.taxRateSource }),
@@ -99,7 +123,13 @@ export class SevdeskClient implements OperationExecutor {
       layout: this.layout,
       parts: this.parts,
       sequences: this.sequences,
-      users: this.users
+      users: this.users,
+      checkAccounts: this.checkAccounts,
+      transactions: this.transactions,
+      exports: this.exports,
+      reports: this.reports,
+      tags: this.tags,
+      textTemplates: this.textTemplates
     };
   }
   public execute<TOperationId extends keyof operations>(

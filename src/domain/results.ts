@@ -12,6 +12,11 @@ import type {
   SevdeskOrderPosition,
   SevdeskPart,
   SevdeskUser,
+  SevdeskCheckAccount,
+  SevdeskTransaction,
+  SevdeskTag,
+  SevdeskTagRelation,
+  SevdeskTextTemplate,
   SevdeskVoucher,
   SevdeskVoucherPosition
 } from "./models.js";
@@ -72,6 +77,46 @@ export type UpdatedPartResult = DomainResult<"updatePart", SevdeskPart>;
 export type UserListResult = PaginatedDomainResult<"getSevUsers", readonly SevdeskUser[]>;
 export type UserResult = DomainResult<"getSevUserById", SevdeskUser>;
 export type NextCustomerNumberResult = DomainResult<"getNextCustomerNumber", string>;
+
+export type CheckAccountListResult = PaginatedDomainResult<
+  "getCheckAccounts",
+  readonly SevdeskCheckAccount[]
+>;
+export type CheckAccountResult = DomainResult<"getCheckAccountById", SevdeskCheckAccount>;
+export type CreatedClearingAccountResult = DomainResult<"createClearingAccount", SevdeskCheckAccount>;
+export type CreatedFileImportAccountResult = DomainResult<
+  "createFileImportAccount",
+  SevdeskCheckAccount
+>;
+export type UpdatedCheckAccountResult = DomainResult<"updateCheckAccount", SevdeskCheckAccount>;
+export type CheckAccountBalanceResult = DomainResult<"getBalanceAtDate", string>;
+
+export type TransactionListResult = PaginatedDomainResult<
+  "getTransactions",
+  readonly SevdeskTransaction[]
+>;
+export type TransactionResult = DomainResult<"getCheckAccountTransactionById", SevdeskTransaction>;
+export type CreatedTransactionResult = DomainResult<"createTransaction", SevdeskTransaction>;
+export type UpdatedTransactionResult = DomainResult<
+  "updateCheckAccountTransaction",
+  SevdeskTransaction
+>;
+
+export type TagListResult = PaginatedDomainResult<"getTags", readonly SevdeskTag[]>;
+export type TagResult = DomainResult<"getTagById", SevdeskTag>;
+export type TagRelationListResult = PaginatedDomainResult<
+  "getTagRelations",
+  readonly SevdeskTagRelation[]
+>;
+export type CreatedTagResult = DomainResult<"createTag", SevdeskTagRelation>;
+export type UpdatedTagResult = DomainResult<"updateTag", SevdeskTag>;
+
+export type TextTemplateListResult = PaginatedDomainResult<
+  "getTextTemplate",
+  readonly SevdeskTextTemplate[]
+>;
+export type CreatedTextTemplateResult = DomainResult<"addTextTemplate", SevdeskTextTemplate>;
+export type UpdatedTextTemplateResult = DomainResult<"updateTextTemplate", SevdeskTextTemplate>;
 
 export interface CreatedInvoice {
   readonly invoice: SevdeskInvoice;

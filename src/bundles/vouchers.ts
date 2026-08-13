@@ -18,12 +18,22 @@ import type {
 } from "../domain/results.js";
 import { requireValue } from "../domain/normalizers.js";
 import { VoucherStatus } from "../enums/domain-enums.js";
-import type { SevdeskIdInput } from "../types/references.js";
+import type { SevdeskVoucher } from "../domain/models.js";
+import type { SevdeskIdInput, SevdeskReference } from "../types/references.js";
 import { SevdeskConfigurationError, SevdeskResponseValidationError } from "../utils/errors.js";
+import { validateSevdeskDateString } from "../utils/validation.js";
+import type { components } from "../types/openapi.js";
 import { buildVoucherBookingPayload, buildVoucherPayload } from "./builders.js";
 import type { VoucherEmbedInput } from "./embed.js";
 import { voucherListQuery } from "./filters.js";
-import { asRequest, forwardCompatibleRequest, numericId, requireEntityId } from "./internal.js";
+import {
+  asRequest,
+  forwardCompatibleBody,
+  forwardCompatibleRequest,
+  numericId,
+  requireEntityId,
+  wireReference
+} from "./internal.js";
 import type {
   BinaryUpload,
   CuratedRequestOptions,
@@ -32,10 +42,43 @@ import type {
   OperationResult,
   VoucherBookingInput,
   VoucherFactoryInput,
+  RequireAtLeastOne,
   VoucherListOptions,
   WorkflowActionReceipt,
   WorkflowResult
 } from "./types.js";
+
+export interface VoucherUpdateFields {
+  readonly voucherDate?: string | null;
+  readonly supplierName?: string | null;
+  readonly description?: string | null;
+  readonly payDate?: string | null;
+  readonly currency?: string | null;
+  readonly supplier?: SevdeskReference<"Contact"> | null;
+}
+
+export type VoucherUpdateInput = RequireAtLeastOne<VoucherUpdateFields>;
+
+type VoucherWireUpdate = components["schemas"]["Model_VoucherUpdate"];
+
+export type VoucherUpdateWorkflowOperationId = "getVoucherById" | "updateVoucher";
+
+export interface VoucherUpdateWorkflowData {
+  readonly before: SevdeskVoucher;
+  readonly receipt: WorkflowActionReceipt<"updateVoucher">;
+  readonly voucher: SevdeskVoucher;
+}
+
+export interface VoucherUpdateWorkflowPartial {
+  readonly before?: SevdeskVoucher;
+  readonly receipt?: WorkflowActionReceipt<"updateVoucher">;
+}
+
+export type VoucherUpdateWorkflowResult = WorkflowResult<
+  "vouchers.update",
+  VoucherUpdateWorkflowData,
+  VoucherUpdateWorkflowOperationId
+>;
 import { workflowActionReceipt, workflowWriteOptions } from "./workflow.js";
 
 export interface VoucherWorkflowData {
@@ -123,6 +166,55 @@ export class VouchersBundle {
       )
     );
     return mapVoucherResult(result);
+  }
+  public async update(
+    voucherId: SevdeskIdInput,
+    input: VoucherUpdateInput,
+    requestOptions?: CuratedRequestOptions
+  ): Promise<VoucherUpdateWorkflowResult> {
+    const id = numericId(voucherId, "voucher");
+    const body = buildVoucherUpdatePayload(input);
+    const context = this.client.createWorkflowContext<
+      "vouchers.update",
+      VoucherUpdateWorkflowOperationId,
+      VoucherUpdateWorkflowPartial
+    >("vouchers.update");
+    let before: SevdeskVoucher;
+    try {
+      const current = await context.step("load voucher before update", "getVoucherById", () =>
+        this.get(id, [], requestOptions)
+      );
+      before = current.data;
+    } catch (error) {
+      throw context.error(error, { partial: {} });
+    }
+    if (before.status !== "DRAFT" && before.statusCode !== VoucherStatus.DRAFT) {
+      throw new SevdeskConfigurationError(
+        `Only draft vouchers can be updated through the curated API (status=${before.status}, code=${before.statusCode}).`
+      );
+    }
+    const partial: {
+      before: SevdeskVoucher;
+      receipt?: WorkflowActionReceipt<"updateVoucher">;
+    } = { before };
+    try {
+      const updated = await context.step("update voucher", "updateVoucher", () =>
+        this.client.raw.voucher.updateVoucher(
+          forwardCompatibleRequest<"updateVoucher">(
+            { path: { voucherId: id }, body },
+            workflowWriteOptions(requestOptions)
+          )
+        )
+      );
+      const receipt = workflowActionReceipt("updateVoucher", updated);
+      partial.receipt = receipt;
+      const hydrated = await context.step("load voucher after update", "getVoucherById", () =>
+        this.get(id, [], requestOptions)
+      );
+      return context.result({ before, receipt, voucher: hydrated.data });
+    } catch (error) {
+      throw context.error(error, { partial });
+    }
   }
   public async uploadAttachment(
     file: BinaryUpload,
@@ -448,4 +540,28 @@ function fileNameFromUpload(value: unknown): string {
   throw new SevdeskConfigurationError(
     "sevdesk returned no temporary filename after voucher upload."
   );
+}
+
+function buildVoucherUpdatePayload(
+  input: VoucherUpdateInput
+): ReturnType<typeof forwardCompatibleBody<VoucherWireUpdate>> {
+  if (Object.keys(input).length === 0) {
+    throw new SevdeskConfigurationError("Voucher update must change at least one field.");
+  }
+  if (input.voucherDate !== undefined && input.voucherDate !== null) {
+    validateSevdeskDateString(input.voucherDate, "voucherDate");
+  }
+  if (input.payDate !== undefined && input.payDate !== null) {
+    validateSevdeskDateString(input.payDate, "payDate");
+  }
+  return forwardCompatibleBody<VoucherWireUpdate>({
+    ...(input.voucherDate === undefined ? {} : { voucherDate: input.voucherDate }),
+    ...(input.supplierName === undefined ? {} : { supplierName: input.supplierName }),
+    ...(input.description === undefined ? {} : { description: input.description }),
+    ...(input.payDate === undefined ? {} : { payDate: input.payDate }),
+    ...(input.currency === undefined ? {} : { currency: input.currency }),
+    ...(input.supplier === undefined
+      ? {}
+      : { supplier: input.supplier === null ? null : wireReference(input.supplier) })
+  });
 }

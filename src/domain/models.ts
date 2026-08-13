@@ -38,6 +38,11 @@ type VoucherWire = components["schemas"]["Model_VoucherResponse"];
 type CreditNoteWire = components["schemas"]["Model_creditNoteResponse"];
 type PartWire = components["schemas"]["Model_Part"];
 type UserWire = components["schemas"]["Model_SevUserResponse"];
+type CheckAccountWire = components["schemas"]["Model_CheckAccountResponse"];
+type TransactionWire = components["schemas"]["Model_CheckAccountTransactionResponse"];
+type TagWire = components["schemas"]["Model_TagResponse"];
+type TagRelationWire = components["schemas"]["Model_TagCreateResponse"];
+type TextTemplateWire = components["schemas"]["Model_TextTemplateResponse"];
 type InvoiceBoundaryWire = Omit<
   WithIdentity<InvoiceWire, "Invoice">,
   "invoiceDate" | "timeToPay" | "reminderDeadline"
@@ -144,6 +149,18 @@ export type SevdeskPart = Readonly<
 >;
 
 export type SevdeskUser = Readonly<WithIdentity<UserWire, "SevUser">>;
+export type SevdeskCheckAccount = Readonly<WithIdentity<CheckAccountWire, "CheckAccount">>;
+export type SevdeskTransaction = Readonly<
+  WithIdentity<TransactionWire, "CheckAccountTransaction">
+>;
+export type SevdeskTag = Readonly<WithIdentity<TagWire, "Tag">>;
+export type SevdeskTagRelation = Readonly<WithIdentity<TagRelationWire, "TagRelation">>;
+export type SevdeskTextTemplate = Readonly<
+  Omit<TextTemplateWire, "id" | "objectName"> & {
+    readonly id: string;
+    readonly objectName: "TextTemplate";
+  }
+>;
 
 export type SevdeskInvoicePosition = components["schemas"]["Model_InvoicePosResponse"];
 export type SevdeskOrderPosition = components["schemas"]["Model_OrderPosResponse"];

@@ -55,6 +55,24 @@ describe.skipIf(!enabled)("sevdesk read-only live contract", () => {
     expect(next.raw.status).toBe(200);
     expect(next.data).toMatch(/^\d+$/);
   });
+  it("lists check accounts, transactions, tags, and text templates", async () => {
+    const live = requireLiveClient();
+    const accounts = await live.checkAccounts.list({ limit: 1, countAll: true });
+    expect(accounts.raw.status).toBe(200);
+    expect(accounts.pagination.returned).toBeGreaterThanOrEqual(0);
+    const accountId = Number(accounts.data[0]?.id);
+    if (Number.isSafeInteger(accountId) && accountId > 0) {
+      const found = await live.checkAccounts.get(accountId);
+      expect(found.raw.status).toBe(200);
+      expect(found.data.objectName).toBe("CheckAccount");
+    }
+    const transactions = await live.transactions.list({ limit: 1, countAll: true });
+    expect(transactions.raw.status).toBe(200);
+    const tags = await live.tags.list({ limit: 1, countAll: true });
+    expect(tags.raw.status).toBe(200);
+    const templates = await live.textTemplates.list({ limit: 1, countAll: true });
+    expect(templates.raw.status).toBe(200);
+  });
   it("can select a layout template by name when the tenant has one", async () => {
     const listed = await requireLiveClient().layout.listTemplates({ type: "Invoice" });
     expect(listed.raw.status).toBe(200);

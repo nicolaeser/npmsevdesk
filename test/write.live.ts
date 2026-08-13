@@ -143,6 +143,29 @@ describe.skipIf(!writesEnabled)("sevdesk guarded live draft writes", () => {
       }
     }
   });
+  it("creates and deletes a uniquely marked text template", async () => {
+    let templateId: number | undefined;
+    try {
+      const created = await requireLiveClient().textTemplates.create({
+        name: `${marker} footer`,
+        text: `${marker} draft text template`,
+        category: "DOCUMENT",
+        objectType: "RE",
+        textType: "FOOT"
+      });
+      templateId = numericId(created.data.id, "created text template");
+      expect(created.data.objectName).toBe("TextTemplate");
+      const updated = await requireLiveClient().textTemplates.update(templateId, {
+        name: `${marker} footer`,
+        text: `${marker} updated text template`
+      });
+      expect(updated.data.text).toContain(marker ?? "");
+    } finally {
+      if (templateId !== undefined) {
+        await requireLiveClient().textTemplates.delete(templateId, { confirm: true });
+      }
+    }
+  });
 });
 
 describe.skipIf(!voucherEnabled)("sevdesk strongly guarded voucher draft write", () => {
@@ -170,6 +193,11 @@ describe.skipIf(!voucherEnabled)("sevdesk strongly guarded voucher draft write",
     });
     const voucherId = numericId(created.data.voucher.id, "created voucher");
     expect(created.data.voucher.status).toBe("DRAFT");
+    const updated = await requireLiveClient().vouchers.update(voucherId, {
+      description: `${marker} voucher draft - SAFE TO DELETE`
+    });
+    expect(updated.workflow).toBe("vouchers.update");
+    expect(updated.data.voucher.status).toBe("DRAFT");
     console.warn(
       `[npmsevdesk live test] voucher draft ${voucherId} was intentionally left behind with marker "${marker}". Delete it manually in the test tenant.`
     );

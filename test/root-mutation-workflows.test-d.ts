@@ -2,10 +2,12 @@ import type { SevdeskClient } from "../src/client/sevdesk-client.js";
 import type {
   ContactDeleteResult,
   ContactUpdateWorkflowResult,
+  CreditNoteUpdateWorkflowResult,
   InvoiceDeleteResult,
   InvoiceUpdateWorkflowResult,
   OrderDeleteResult,
-  OrderUpdateWorkflowResult
+  OrderUpdateWorkflowResult,
+  VoucherUpdateWorkflowResult
 } from "../src/bundles/index.js";
 
 async function rootMutationResultTypes(client: SevdeskClient): Promise<void> {
@@ -42,6 +44,18 @@ async function rootMutationResultTypes(client: SevdeskClient): Promise<void> {
   const orderDeleteOperation: "deleteOrder" = orderDelete.operationId;
   const contactDeleteOperation: "deleteContact" = contactDelete.operationId;
   void [invoiceDeleteOperation, orderDeleteOperation, contactDeleteOperation];
+  const creditNote: CreditNoteUpdateWorkflowResult = await client.creditNotes.update(8, {
+    header: "Updated"
+  });
+  const creditNoteId: string = creditNote.data.creditNote.id;
+  const creditNoteWrite: "updatecreditNote" = creditNote.data.receipt.operationId;
+  void [creditNoteId, creditNoteWrite];
+  const voucher: VoucherUpdateWorkflowResult = await client.vouchers.update(5, {
+    description: "Updated"
+  });
+  const voucherId: string = voucher.data.voucher.id;
+  const voucherWrite: "updateVoucher" = voucher.data.receipt.operationId;
+  void [voucherId, voucherWrite];
 }
 
 declare const client: SevdeskClient;
