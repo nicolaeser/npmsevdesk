@@ -27,7 +27,9 @@ if (channel !== undefined && channel !== "latest" && channel !== "dev") {
   errors.push(`release channel must be "latest" or "dev", received "${channel}".`);
 }
 if (channel === "latest" && prerelease) {
-  errors.push(`channel "latest" cannot publish prerelease version "${version}".`);
+  console.log(
+    `Prerelease ${packageJson.name}@${version} is not eligible for latest; publish will skip.`
+  );
 }
 if (typeof releaseTag === "string" && /^v\d/u.test(releaseTag) && releaseTag !== `v${version}`) {
   errors.push(`release tag must be exactly "v${version}", received "${releaseTag}".`);
