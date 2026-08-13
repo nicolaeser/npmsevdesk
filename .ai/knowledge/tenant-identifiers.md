@@ -24,9 +24,11 @@ vendor attribute tables and `src/bundles/types.ts`.
 
 Official prose documents `GET /SevSequence/Factory/getByType` with
 `objectType` plus the official type code (`type=RE` for a normal invoice). The
-path is not generated. Use `client.request()`. The `type` query is still the
-document class, not the printed prefix. Evidence: vendor Invoice and CreditNote
-tag prose.
+path is not generated. Use `client.sequences.next({ objectType, type })`, which
+formats `%YYYY`, `%MM`, and `%NUMBER` from the tenant sequence object. The
+`type` query is still the document class, not the printed prefix. Tenant
+prefixes such as `INV.` must not be sent as `type`. Evidence: vendor Invoice
+and CreditNote tag prose.
 
 ## SDK behavior
 

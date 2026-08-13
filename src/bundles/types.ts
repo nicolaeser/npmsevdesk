@@ -229,6 +229,7 @@ export type InvoiceCreateInput = Omit<
   readonly origin?: SevdeskReference<"Order"> | null;
   readonly sendType?: SendTypeInput | null;
   readonly accountIntervall?: RecurringIntervalInput | null;
+  readonly accountNextInvoice?: number | Date | null;
   readonly currency: string;
   readonly status?: InvoiceStatusInput;
   readonly invoiceType?: InvoiceTypeInput;

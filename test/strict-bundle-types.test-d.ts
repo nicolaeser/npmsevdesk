@@ -48,6 +48,17 @@ const validInvoice = {
 } satisfies InvoiceFactoryInput;
 void validInvoice;
 
+const recurringInvoice = {
+  invoice: {
+    ...invoice,
+    invoiceType: "WKR" as const,
+    accountIntervall: "monthly" as const,
+    accountNextInvoice: new Date("2026-09-01T12:00:00")
+  },
+  positions: [invoicePosition]
+} satisfies InvoiceFactoryInput;
+void recurringInvoice;
+
 const knownStatus: InvoiceFactoryInput["invoice"]["status"] = 100;
 void knownStatus;
 

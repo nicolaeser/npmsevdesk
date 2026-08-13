@@ -79,7 +79,6 @@ import type {
 const invoiceReadOnlyFields = [
   "dunningLevel",
   "accountIntervall",
-  "accountNextInvoice",
   "sumNet",
   "sumTax",
   "sumGross",
@@ -286,6 +285,7 @@ export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
     origin,
     sendType,
     accountIntervall,
+    accountNextInvoice,
     ...rawInvoice
   } = input.invoice;
   assertCuratedTaxInput(tax);
@@ -333,6 +333,7 @@ export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
         ? {}
         : { smallSettlement: resolvedSmallSettlement }),
       ...taxFields,
+      ...(positionTaxRates[0] === undefined ? {} : { taxRate: positionTaxRates[0] }),
       objectName: "Invoice" as const,
       mapAll: true,
       status: String(resolvedStatus) as `${typeof InvoiceStatus.DRAFT}`,
@@ -360,6 +361,14 @@ export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
               accountIntervall === null
                 ? null
                 : stringEnumCode(RecurringInterval, accountIntervall, "invoice recurring interval")
+          }),
+      ...(accountNextInvoice === undefined
+        ? {}
+        : {
+            accountNextInvoice:
+              accountNextInvoice === null
+                ? null
+                : validateUnixTimestamp(accountNextInvoice, "invoice accountNextInvoice")
           })
     },
     invoicePosSave: input.positions.map(({ unity, part, ...position }, index) => {
@@ -435,6 +444,7 @@ export function buildOrderPayload<const TInput extends OrderFactoryInput>(
         ? {}
         : { smallSettlement: resolvedSmallSettlement }),
       ...buildTaxFields(tax),
+      ...(positionTaxRates[0] === undefined ? {} : { taxRate: positionTaxRates[0] }),
       objectName: "Order" as const,
       mapAll: true,
       status: resolvedStatus,
@@ -714,6 +724,7 @@ export function buildCreditNotePayload<const TInput extends CreditNoteFactoryInp
         ? {}
         : { smallSettlement: resolvedSmallSettlement }),
       ...buildTaxFields(tax),
+      ...(positionTaxRates[0] === undefined ? {} : { taxRate: positionTaxRates[0] }),
       objectName: "CreditNote" as const,
       mapAll: true,
       status: String(resolvedStatus) as `${typeof CreditNoteStatus.DRAFT}`,

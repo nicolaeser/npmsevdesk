@@ -10,3 +10,6 @@ void layout.setInvoiceLayout(1, { language: "it_IT" });
 
 // @ts-expect-error PayPal modes are the documented A/B/C/D values only.
 void layout.setInvoiceLayout(1, { payPal: "enabled" });
+
+// @ts-expect-error findTemplate requires a name.
+void layout.findTemplate({ type: "Invoice" });

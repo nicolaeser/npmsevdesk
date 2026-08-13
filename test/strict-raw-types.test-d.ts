@@ -45,6 +45,12 @@ client.raw.voucher.voucherUploadFile({ body: new FormData() });
 client.raw.voucher.voucherUploadFile({ body: { file: "/tmp/voucher.pdf" } });
 
 client.raw.invoice.invoiceRender({ path: { invoiceId: 1 } });
+client.raw.invoicePos.updateInvoicePos({
+  path: { invoicePosId: 9 },
+  body: { price: 25 }
+});
+// @ts-expect-error InvoicePos updates require the generated path envelope.
+client.raw.invoicePos.updateInvoicePos({ body: { price: 25 } });
 client.raw.checkAccount.createFileImportAccount({
   body: { name: "Import", importType: "CSV" }
 });

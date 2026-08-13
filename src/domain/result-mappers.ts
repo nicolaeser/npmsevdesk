@@ -12,6 +12,7 @@ import {
   normalizeInvoice,
   normalizeOrder,
   normalizePart,
+  normalizeUser,
   normalizeVoucher,
   requireCollection,
   requireSingle,
@@ -41,6 +42,8 @@ import type {
   SentInvoiceResult,
   SentOrderResult,
   UpdatedPartResult,
+  UserListResult,
+  UserResult,
   VoucherListResult,
   VoucherResult
 } from "./results.js";
@@ -196,4 +199,12 @@ export function mapUpdatedPartResult(
   result: ResultFor<operations["updatePart"]>
 ): UpdatedPartResult {
   return mapResultData(result, normalizePart(requireValue(result.data, "updated part")));
+}
+
+export function mapUserListResult(result: ResultFor<operations["getSevUsers"]>): UserListResult {
+  return mapPaginatedResultData(result, requireCollection(result.data, "sevUser").map(normalizeUser));
+}
+
+export function mapUserResult(result: ResultFor<operations["getSevUserById"]>): UserResult {
+  return mapResultData(result, normalizeUser(requireSingle(result.data, "sevUser")));
 }

@@ -92,6 +92,27 @@ async function verifyCuratedAndRawContracts(): Promise<void> {
   });
   const converted: SevdeskInvoice = convertedInvoice.data.created;
   void converted;
+  const nextNumber: string = (await client.contacts.nextCustomerNumber()).data;
+  void nextNumber;
+  const users = await client.users.list({ limit: 1 });
+  const userId: string | undefined = users.data[0]?.id;
+  void userId;
+  const sequence = await client.sequences.next({
+    objectType: "Invoice",
+    type: "RE"
+  });
+  const formatted: string = sequence.data.formatted;
+  void formatted;
+  const template = await client.layout.findTemplate({ type: "Invoice", name: "Standard" });
+  const templateId: string | undefined = template?.id;
+  void templateId;
+  const enshrined = await client.invoices.enshrine(42);
+  void enshrined.response.status;
+  await client.invoices.updatePosition(9, { price: 25 });
+  await client.raw.invoicePos.updateInvoicePos({
+    path: { invoicePosId: 9 },
+    body: { price: 25 }
+  });
 }
 
 // @ts-expect-error client configuration accepts auth and transport settings only

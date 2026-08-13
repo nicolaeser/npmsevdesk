@@ -108,7 +108,8 @@ describe("payload builders", () => {
       status: String(InvoiceStatus.DRAFT),
       invoiceType: "RE",
       contact: { id: 12, objectName: "Contact" },
-      taxRule: { id: TaxRule.STANDARD_TAXABLE, objectName: "TaxRule" }
+      taxRule: { id: TaxRule.STANDARD_TAXABLE, objectName: "TaxRule" },
+      taxRate: 19
     });
     expect(payload.invoicePosSave[0]).toMatchObject({
       objectName: "InvoicePos",
@@ -121,6 +122,35 @@ describe("payload builders", () => {
     expect(payload.discountSave).toBeNull();
     expect(payload.discountDelete).toBeNull();
     expect(JSON.parse(JSON.stringify(payload))).toEqual(payload);
+  });
+  it("accepts recurring WKR next-charge timestamps on factory create", () => {
+    const nextCharge = new Date(2026, 8, 1, 12, 0, 0);
+    const payload = buildInvoicePayload({
+      invoice: {
+        invoiceDate: "13.08.2026",
+        contact: refs.contact(12),
+        contactPerson: refs.sevUser(3),
+        currency: "EUR",
+        invoiceType: InvoiceType.RECURRING,
+        accountIntervall: "monthly",
+        accountNextInvoice: nextCharge,
+        tax: taxes.manual.sales({
+          bookkeepingSystem: "2.0",
+          taxRule: "standard_taxable"
+        })
+      },
+      positions: [
+        {
+          quantity: 1,
+          price: 10,
+          taxRate: 19,
+          unity: refs.unity(1)
+        }
+      ]
+    });
+    expect(payload.invoice.invoiceType).toBe("WKR");
+    expect(payload.invoice.accountIntervall).toBe("P0Y1M");
+    expect(payload.invoice.accountNextInvoice).toBe(Math.floor(nextCharge.getTime() / 1_000));
   });
   it("passes tenant invoice numbers through without changing invoiceType", () => {
     const payload = buildInvoicePayload({

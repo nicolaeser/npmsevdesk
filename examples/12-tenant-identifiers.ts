@@ -51,13 +51,11 @@ try {
     ]
   });
   console.log(payload.invoice.invoiceType, payload.invoice.invoiceNumber);
-  const sequence = await client.request({
-    method: "GET",
-    path: "/SevSequence/Factory/getByType",
-    query: { objectType: "Invoice", type: InvoiceType.NORMAL },
-    retrySafe: true
+  const sequence = await client.sequences.next({
+    objectType: "Invoice",
+    type: InvoiceType.NORMAL
   });
-  console.log(sequence.json);
+  console.log(sequence.data.formatted, sequence.data.format);
 } catch (error) {
   if (error instanceof SevdeskLookupNotFoundError) {
     console.error("Required object not found", error.resource);

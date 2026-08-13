@@ -23,7 +23,8 @@ try {
     client.layout.listLetterpapers(),
     client.parts.list({ limit: 50, countAll: true, embed: ["category", "unity"] })
   ]);
-  console.log(templates.data, letterpapers.data);
+  const named = await client.layout.findTemplate({ type: "Invoice", name: "Standard" });
+  console.log(templates.data, letterpapers.data, named?.id);
   console.log(parts.data, parts.pagination);
   const [part, stock, pdf, xml] = await Promise.all([
     client.parts.get(partId),

@@ -7,6 +7,8 @@ import { OrdersBundle } from "../bundles/orders.js";
 import { PartsBundle } from "../bundles/parts.js";
 import { PaymentsBundle } from "../bundles/payments.js";
 import { RemindersBundle } from "../bundles/reminders.js";
+import { SequencesBundle } from "../bundles/sequences.js";
+import { UsersBundle } from "../bundles/users.js";
 import { VouchersBundle } from "../bundles/vouchers.js";
 import { LookupModule } from "../lookup/lookup.js";
 import { TaxesModule } from "../taxes/taxes.js";
@@ -39,6 +41,8 @@ export class SevdeskClient implements OperationExecutor {
   public readonly reminders: RemindersBundle;
   public readonly layout: LayoutBundle;
   public readonly parts: PartsBundle;
+  public readonly sequences: SequencesBundle;
+  public readonly users: UsersBundle;
   public readonly lookup: LookupModule;
   public readonly taxes: TaxesModule;
   public readonly bundles: {
@@ -51,6 +55,8 @@ export class SevdeskClient implements OperationExecutor {
     readonly reminders: RemindersBundle;
     readonly layout: LayoutBundle;
     readonly parts: PartsBundle;
+    readonly sequences: SequencesBundle;
+    readonly users: UsersBundle;
   };
   private readonly transport: AxiosTransport;
   public constructor(config: SevdeskClientConfig) {
@@ -67,6 +73,8 @@ export class SevdeskClient implements OperationExecutor {
     this.reminders = new RemindersBundle(this);
     this.layout = new LayoutBundle(this);
     this.parts = new PartsBundle(this);
+    this.sequences = new SequencesBundle(this);
+    this.users = new UsersBundle(this);
     this.lookup = new LookupModule(this);
     this.taxes = new TaxesModule(this, {
       ...(config.taxRateSource === undefined ? {} : { rateSource: config.taxRateSource }),
@@ -89,7 +97,9 @@ export class SevdeskClient implements OperationExecutor {
       payments: this.payments,
       reminders: this.reminders,
       layout: this.layout,
-      parts: this.parts
+      parts: this.parts,
+      sequences: this.sequences,
+      users: this.users
     };
   }
   public execute<TOperationId extends keyof operations>(

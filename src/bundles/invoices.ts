@@ -15,7 +15,7 @@ import type {
   InvoiceResult,
   SentInvoiceResult
 } from "../domain/results.js";
-import type { SevdeskInvoice } from "../domain/models.js";
+import type { SevdeskInvoice, SevdeskInvoicePosition } from "../domain/models.js";
 import {
   InvoiceFromOrderPartialType,
   InvoiceStatus,
@@ -105,6 +105,20 @@ export interface InvoiceUpdateInput {
   readonly contactPerson?: SevdeskReference<"SevUser">;
 }
 
+export interface InvoicePositionUpdateFields {
+  readonly name?: string | null;
+  readonly text?: string | null;
+  readonly quantity?: number;
+  readonly price?: number | null;
+  readonly priceNet?: number | null;
+  readonly priceGross?: number | null;
+  readonly taxRate?: number | null;
+  readonly discount?: number | null;
+  readonly positionNumber?: number | null;
+  readonly unity?: SevdeskReference<"Unity">;
+  readonly part?: SevdeskReference<"Part">;
+}
+
 type InvoiceWireUpdate = components["schemas"]["Model_InvoiceUpdate"];
 import type {
   BookingInput,
@@ -119,10 +133,15 @@ import type {
   OperationData,
   OperationResult,
   OptionalInvoiceFinalizingPlan,
+  RequireAtLeastOne,
   WorkflowActionReceipt,
   WorkflowResult,
   WorkflowStep
 } from "./types.js";
+
+export type InvoicePositionUpdateInput = RequireAtLeastOne<InvoicePositionUpdateFields>;
+
+type InvoicePosWireUpdate = components["schemas"]["Model_InvoicePosUpdate"];
 import {
   assertNewDocumentTailIsValid,
   workflowActionReceipt,
@@ -150,6 +169,30 @@ export type InvoiceUpdateWorkflowResult = WorkflowResult<
 >;
 
 export type InvoiceDeleteResult = WorkflowActionReceipt<"deleteInvoiceById">;
+
+export type InvoiceEnshrineResult = OperationResult<"invoiceEnshrine">;
+
+export type InvoicePositionUpdateWorkflowOperationId =
+  | "getInvoicePos"
+  | "getInvoiceById"
+  | "updateInvoicePos";
+
+export interface InvoicePositionUpdateWorkflowData {
+  readonly before: SevdeskInvoice;
+  readonly receipt: WorkflowActionReceipt<"updateInvoicePos">;
+  readonly position: SevdeskInvoicePosition;
+}
+
+export interface InvoicePositionUpdateWorkflowPartial {
+  readonly before?: SevdeskInvoice;
+  readonly receipt?: WorkflowActionReceipt<"updateInvoicePos">;
+}
+
+export type InvoicePositionUpdateWorkflowResult = WorkflowResult<
+  "invoices.updatePosition",
+  InvoicePositionUpdateWorkflowData,
+  InvoicePositionUpdateWorkflowOperationId
+>;
 
 export type CreateAndFinalizeInvoiceInput = InvoiceFactoryInput & InvoiceFinalizingPlan;
 
@@ -391,6 +434,75 @@ export class InvoicesBundle {
       )
     );
     return workflowActionReceipt("deleteInvoiceById", result);
+  }
+  public async updatePosition(
+    positionId: SevdeskIdInput,
+    input: InvoicePositionUpdateInput,
+    requestOptions?: CuratedRequestOptions
+  ): Promise<InvoicePositionUpdateWorkflowResult> {
+    const id = numericId(positionId, "invoice position");
+    const body = buildInvoicePositionUpdatePayload(input);
+    const context = this.client.createWorkflowContext<
+      "invoices.updatePosition",
+      InvoicePositionUpdateWorkflowOperationId,
+      InvoicePositionUpdateWorkflowPartial
+    >("invoices.updatePosition");
+    let before: SevdeskInvoice;
+    try {
+      const current = await context.step("load invoice position before update", "getInvoicePos", () =>
+        this.client.raw.invoicePos.getInvoicePos(
+          asRequest<"getInvoicePos">({ query: { id } }, requestOptions)
+        )
+      );
+      const position = requireSingleInvoicePosition(current.data, id);
+      const invoiceId = requirePositionInvoiceId(position);
+      const invoice = await context.step("load invoice before position update", "getInvoiceById", () =>
+        this.get(invoiceId, [], requestOptions)
+      );
+      before = invoice.data;
+    } catch (error) {
+      throw context.error(error, { partial: {} });
+    }
+    assertDraftDocument(before, "invoice");
+    const partial: {
+      before: SevdeskInvoice;
+      receipt?: WorkflowActionReceipt<"updateInvoicePos">;
+    } = { before };
+    try {
+      const updated = await context.step("update invoice position", "updateInvoicePos", () =>
+        this.client.raw.invoicePos.updateInvoicePos(
+          forwardCompatibleRequest<"updateInvoicePos">(
+            { path: { invoicePosId: id }, body },
+            workflowWriteOptions(requestOptions)
+          )
+        )
+      );
+      const receipt = workflowActionReceipt("updateInvoicePos", updated);
+      partial.receipt = receipt;
+      const reloaded = await context.step("load invoice position after update", "getInvoicePos", () =>
+        this.client.raw.invoicePos.getInvoicePos(
+          asRequest<"getInvoicePos">({ query: { id } }, requestOptions)
+        )
+      );
+      return context.result({
+        before,
+        receipt,
+        position: requireSingleInvoicePosition(reloaded.data, id)
+      });
+    } catch (error) {
+      throw context.error(error, { partial });
+    }
+  }
+  public enshrine(
+    invoiceId: SevdeskIdInput,
+    requestOptions?: CuratedRequestOptions
+  ): Promise<InvoiceEnshrineResult> {
+    return this.client.raw.invoice.invoiceEnshrine(
+      asRequest<"invoiceEnshrine">(
+        { path: { invoiceId: numericId(invoiceId, "invoice") } },
+        workflowWriteOptions(requestOptions)
+      )
+    );
   }
   public async create(
     input: InvoiceFactoryInput,
@@ -1049,6 +1161,85 @@ function assertDraftDocument(
   throw new SevdeskConfigurationError(
     `Only draft ${label}s can be updated or deleted through the curated API (status=${document.status}, code=${document.statusCode}).`
   );
+}
+
+function buildInvoicePositionUpdatePayload(
+  input: InvoicePositionUpdateInput
+): ReturnType<typeof forwardCompatibleBody<InvoicePosWireUpdate>> {
+  const keys = Object.keys(input);
+  if (keys.length === 0) {
+    throw new SevdeskConfigurationError("Invoice position update must change at least one field.");
+  }
+  if (input.quantity !== undefined) {
+    validateFiniteNumber(input.quantity, "invoice position quantity");
+  }
+  if (input.price !== undefined && input.price !== null) {
+    validateFiniteNumber(input.price, "invoice position price");
+  }
+  if (input.priceNet !== undefined && input.priceNet !== null) {
+    validateFiniteNumber(input.priceNet, "invoice position priceNet");
+  }
+  if (input.priceGross !== undefined && input.priceGross !== null) {
+    validateFiniteNumber(input.priceGross, "invoice position priceGross");
+  }
+  if (input.taxRate !== undefined && input.taxRate !== null) {
+    validateFiniteNumber(input.taxRate, "invoice position taxRate");
+  }
+  if (input.discount !== undefined && input.discount !== null) {
+    validateFiniteNumber(input.discount, "invoice position discount");
+  }
+  if (
+    input.positionNumber !== undefined &&
+    input.positionNumber !== null &&
+    !Number.isSafeInteger(input.positionNumber)
+  ) {
+    throw new SevdeskConfigurationError("invoice position positionNumber must be a safe integer.");
+  }
+  return forwardCompatibleBody<InvoicePosWireUpdate>({
+    ...(input.name === undefined ? {} : { name: input.name }),
+    ...(input.text === undefined ? {} : { text: input.text }),
+    ...(input.quantity === undefined ? {} : { quantity: input.quantity }),
+    ...(input.price === undefined ? {} : { price: input.price }),
+    ...(input.priceNet === undefined ? {} : { priceNet: input.priceNet }),
+    ...(input.priceGross === undefined ? {} : { priceGross: input.priceGross }),
+    ...(input.taxRate === undefined ? {} : { taxRate: input.taxRate }),
+    ...(input.discount === undefined ? {} : { discount: input.discount }),
+    ...(input.positionNumber === undefined ? {} : { positionNumber: input.positionNumber }),
+    ...(input.unity === undefined ? {} : { unity: wireReference(input.unity) }),
+    ...(input.part === undefined ? {} : { part: wireReference(input.part) })
+  });
+}
+
+function requireSingleInvoicePosition(
+  value: unknown,
+  positionId: number
+): SevdeskInvoicePosition {
+  const collection = Array.isArray(value) ? value : value === undefined || value === null ? [] : [value];
+  if (collection.length !== 1 || collection[0] === undefined) {
+    throw new SevdeskResponseValidationError(
+      `sevdesk returned ${collection.length} invoice positions where exactly one was expected.`,
+      { value }
+    );
+  }
+  const position = collection[0] as SevdeskInvoicePosition;
+  if (position.id !== undefined && numericId(position.id, "invoice position response") !== positionId) {
+    throw new SevdeskResponseValidationError(
+      "sevdesk returned a different invoice position than requested.",
+      { value: position }
+    );
+  }
+  return position;
+}
+
+function requirePositionInvoiceId(position: SevdeskInvoicePosition): number {
+  const invoice = position.invoice;
+  if (invoice === undefined || invoice === null) {
+    throw new SevdeskResponseValidationError(
+      "sevdesk returned an invoice position without a parent invoice.",
+      { value: position }
+    );
+  }
+  return numericId(invoice.id, "invoice position invoice");
 }
 
 function buildInvoiceUpdatePayload(

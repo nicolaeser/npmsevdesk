@@ -37,6 +37,7 @@ type OrderWire = components["schemas"]["Model_OrderResponse"];
 type VoucherWire = components["schemas"]["Model_VoucherResponse"];
 type CreditNoteWire = components["schemas"]["Model_creditNoteResponse"];
 type PartWire = components["schemas"]["Model_Part"];
+type UserWire = components["schemas"]["Model_SevUserResponse"];
 type InvoiceBoundaryWire = Omit<
   WithIdentity<InvoiceWire, "Invoice">,
   "invoiceDate" | "timeToPay" | "reminderDeadline"
@@ -141,6 +142,8 @@ type MissingPartStatus = {
 export type SevdeskPart = Readonly<
   Omit<WithIdentity<PartWire, "Part">, "status"> & (PartNormalizedStatus | MissingPartStatus)
 >;
+
+export type SevdeskUser = Readonly<WithIdentity<UserWire, "SevUser">>;
 
 export type SevdeskInvoicePosition = components["schemas"]["Model_InvoicePosResponse"];
 export type SevdeskOrderPosition = components["schemas"]["Model_OrderPosResponse"];

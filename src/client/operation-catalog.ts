@@ -1674,6 +1674,17 @@ const generatedOperationCatalog = {
     deprecated: false,
     query: [{"name":"embed","style":"form","explode":false,"array":true}]
   },
+  "updateInvoicePos": {
+    operationId: "updateInvoicePos",
+    method: "PUT",
+    path: "/InvoicePos/{invoicePosId}",
+    tag: "InvoicePos",
+    requestContentType: "application/json",
+    responseContentType: "application/json",
+    retrySafe: false,
+    deprecated: false,
+    query: []
+  },
   "updateInvoiceTemplate": {
     operationId: "updateInvoiceTemplate",
     method: "PUT",
