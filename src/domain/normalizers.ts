@@ -18,9 +18,15 @@ import type {
   SevdeskContact,
   SevdeskCreditNote,
   SevdeskInvoice,
+  SevdeskInvoicePosition,
   SevdeskOrder,
   SevdeskPart,
   SevdeskUser,
+  SevdeskCheckAccount,
+  SevdeskTransaction,
+  SevdeskTag,
+  SevdeskTagRelation,
+  SevdeskTextTemplate,
   SevdeskVoucher,
   SemanticCode,
   SendSemanticCode
@@ -287,6 +293,26 @@ export function normalizeCreatedCreditNote(
   };
 }
 
+export function normalizeInvoicePosition(
+  value: components["schemas"]["Model_InvoicePosResponse"]
+): SevdeskInvoicePosition {
+  const record = requireRecord(value, "invoice position");
+  if (record.objectName !== undefined) {
+    requireObjectName(record.objectName, "InvoicePos", "invoice position");
+  }
+  if (record.id === undefined) {
+    return {
+      ...record,
+      objectName: "InvoicePos"
+    };
+  }
+  return {
+    ...record,
+    id: requiredId(record.id, "invoice position"),
+    objectName: "InvoicePos"
+  };
+}
+
 export function normalizeUser(
   value: components["schemas"]["Model_SevUserResponse"]
 ): SevdeskUser {
@@ -299,6 +325,62 @@ export function normalizeUser(
     ...user,
     id: requiredId(id, "sevUser"),
     objectName: "SevUser"
+  };
+}
+
+export function normalizeCheckAccount(value: unknown): SevdeskCheckAccount {
+  return normalizeNamed(
+    requireRecord(value, "check account") as components["schemas"]["Model_CheckAccountResponse"],
+    "CheckAccount",
+    "check account"
+  );
+}
+
+export function normalizeTransaction(
+  value: components["schemas"]["Model_CheckAccountTransactionResponse"]
+): SevdeskTransaction {
+  return normalizeNamed(value, "CheckAccountTransaction", "check-account transaction");
+}
+
+export function normalizeTag(value: components["schemas"]["Model_TagResponse"]): SevdeskTag {
+  return normalizeNamed(value, "Tag", "tag");
+}
+
+export function normalizeTagRelation(
+  value: components["schemas"]["Model_TagCreateResponse"]
+): SevdeskTagRelation {
+  return normalizeNamed(value, "TagRelation", "tag relation");
+}
+
+export function normalizeTextTemplate(
+  value: components["schemas"]["Model_TextTemplateResponse"]
+): SevdeskTextTemplate {
+  const record = requireRecord(value, "text template");
+  const { id, ...rest } = record;
+  return {
+    ...rest,
+    id: requiredId(id, "text template"),
+    objectName: "TextTemplate"
+  };
+}
+
+function normalizeNamed<
+  TValue extends { readonly id?: unknown; readonly objectName?: string },
+  TName extends string
+>(
+  value: TValue,
+  objectName: TName,
+  label: string
+): Omit<TValue, "id" | "objectName"> & { readonly id: string; readonly objectName: TName } {
+  const record = requireRecord(value, label);
+  const { id, objectName: received, ...rest } = record;
+  if (received !== undefined && received !== objectName) {
+    requireObjectName(received, objectName, label);
+  }
+  return {
+    ...rest,
+    id: requiredId(id, label),
+    objectName
   };
 }
 

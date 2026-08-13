@@ -1,6 +1,11 @@
 import { buildDeliveryPayload, buildInvoicePayload } from "../src/bundles/builders.js";
 import type { InvoiceTypeInput } from "../src/enums/domain-enums.js";
-import { rawEmbed, type ContactEmbedInput, type InvoiceEmbedInput } from "../src/bundles/embed.js";
+import {
+  rawEmbed,
+  type ContactEmbedInput,
+  type InvoiceEmbedInput,
+  type InvoicePositionEmbedInput
+} from "../src/bundles/embed.js";
 import type {
   ContactCreatePayload,
   ContactFactoryPayload,
@@ -34,9 +39,11 @@ refs.contact("abc");
 const contactEmbed: ContactEmbedInput = "parent.category";
 const futureContactEmbed: ContactEmbedInput = rawEmbed("future.contactRelation");
 const invoiceEmbed: InvoiceEmbedInput = "contact.parent";
+const positionEmbed: InvoicePositionEmbedInput = "unity";
 void contactEmbed;
 void futureContactEmbed;
 void invoiceEmbed;
+void positionEmbed;
 
 // @ts-expect-error unknown paths require rawEmbed() so they are reviewable
 const accidentalEmbed: ContactEmbedInput = "future.contactRelation";

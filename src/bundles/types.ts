@@ -45,6 +45,7 @@ import type {
   ContactEmbedInput,
   CreditNoteEmbedInput,
   InvoiceEmbedInput,
+  InvoicePositionEmbedInput,
   OrderEmbedInput,
   VoucherEmbedInput
 } from "./embed.js";
@@ -865,6 +866,8 @@ export interface ContactListOptions extends PageOptions<ContactEmbedInput> {
   readonly updateAfter?: DateFilter;
   readonly orderByCustomerNumber?: SortDirectionInput;
 }
+
+export type InvoicePositionListOptions = PageOptions<InvoicePositionEmbedInput>;
 
 export interface InvoiceListOptions extends PageOptions<InvoiceEmbedInput> {
   readonly status?: InvoiceStatusInput;

@@ -7,7 +7,8 @@ Load this when adopting the package or choosing between curated, lookup, tax, an
 - `createSevdeskClient({ apiToken })` is transport-only. Status and enum maps are not constructor
   configuration.
 - Curated modules: `contacts`, `invoices`, `orders`, `creditNotes`, `vouchers`, `payments`,
-  `reminders`, `layout`, `parts`, `sequences`, `users`. The same instances are also on
+  `reminders`, `layout`, `parts`, `sequences`, `users`, `checkAccounts`, `transactions`,
+  `exports`, `reports`, `tags`, `textTemplates`. The same instances are also on
   `client.bundles`.
 - `client.lookup` resolves exact contact customer numbers, check-account IBAN/names, part
   numbers/names, and countries. Ambiguity fails; `find*` only makes zero matches optional.
@@ -32,8 +33,8 @@ a workflow name only for multi-request choreography. Canonical compounds include
 Removed prerelease aliases such as `createFullContact`, `createAndFinaliseInvoice`, `bookInvoice`,
 `uploadFile`, `preflight`, and `createReminder` must not be reintroduced.
 
-Check accounts, transactions, exports, reports, tags, and text templates have no curated
-module; use `client.raw`. Credit-note and voucher updates exist only on the raw surface.
+`exportDatevDepricated` is raw-only. `reports.creditNotes` is not generated. Credit-note and
+voucher curated updates are draft-only workflows matching `invoices.update`.
 
 ## Results
 

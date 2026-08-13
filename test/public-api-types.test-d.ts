@@ -108,11 +108,55 @@ async function verifyCuratedAndRawContracts(): Promise<void> {
   void templateId;
   const enshrined = await client.invoices.enshrine(42);
   void enshrined.response.status;
+  const listedPositions = await client.invoices.listPositions(42, {
+    limit: 50,
+    countAll: true,
+    embed: ["part", "unity"]
+  });
+  const positionTaxRate: string | undefined = listedPositions.data[0]?.taxRate;
+  const positionPageTotal: number | undefined = listedPositions.pagination.total;
+  void positionTaxRate;
+  void positionPageTotal;
+  // @ts-expect-error invoice-position embeds are the reviewed relation names only
+  await client.invoices.listPositions(42, { embed: ["contact"] });
   await client.invoices.updatePosition(9, { price: 25 });
   await client.raw.invoicePos.updateInvoicePos({
     path: { invoicePosId: 9 },
     body: { price: 25 }
   });
+  const accounts = await client.checkAccounts.list({ limit: 1 });
+  const accountId: string | undefined = accounts.data[0]?.id;
+  const accountPage: number | undefined = accounts.pagination.total;
+  void accountId;
+  void accountPage;
+  const transactions = await client.transactions.list({
+    embed: ["checkAccount"],
+    status: "created"
+  });
+  const transactionId: string | undefined = transactions.data[0]?.id;
+  void transactionId;
+  // @ts-expect-error transaction embeds are the reviewed relation names only
+  await client.transactions.list({ embed: ["contact"] });
+  await client.tags.delete(33, { confirm: true });
+  // @ts-expect-error curated deletes require an explicit confirm flag
+  await client.tags.delete(33);
+  const exported = await client.exports.invoices({
+    filter: { invoiceTypes: ["normal"] }
+  });
+  const exportName: string | undefined = exported.data.filename;
+  void exportName;
+  const reported = await client.reports.invoices({ view: "csv" });
+  const reportName: string | undefined = reported.data.filename;
+  void reportName;
+  // @ts-expect-error reportCreditNote is not a generated operation
+  await client.reports.creditNotes();
+  // @ts-expect-error deprecated DATEV remains raw-only
+  await client.exports.datevDeprecated();
+  await client.creditNotes.update(8, { header: "Updated" });
+  await client.vouchers.update(5, { description: "Updated" });
+  const templates = await client.textTemplates.list({ objectType: "RE" });
+  const textTemplateId: string | undefined = templates.data[0]?.id;
+  void textTemplateId;
 }
 
 // @ts-expect-error client configuration accepts auth and transport settings only

@@ -3,6 +3,7 @@ import {
   mapCancelledInvoiceResult,
   mapCreatedInvoiceResult,
   mapInvoiceListResult,
+  mapInvoicePositionListResult,
   mapInvoiceResult,
   mapSentInvoiceResult
 } from "../domain/result-mappers.js";
@@ -12,6 +13,7 @@ import type {
   CreatedInvoice,
   CreatedInvoiceResult,
   InvoiceListResult,
+  InvoicePositionListResult,
   InvoiceResult,
   SentInvoiceResult
 } from "../domain/results.js";
@@ -31,7 +33,12 @@ import {
   SevdeskResponseValidationError,
   SevdeskTimeoutError
 } from "../utils/errors.js";
-import { validateFiniteNumber, validateSevdeskDateString } from "../utils/validation.js";
+import {
+  validateFiniteNumber,
+  validatePaginationLimit,
+  validatePaginationOffset,
+  validateSevdeskDateString
+} from "../utils/validation.js";
 import {
   buildDeliveryPayload,
   buildEntityReference,
@@ -39,7 +46,7 @@ import {
   buildInvoicePayload
 } from "./builders.js";
 import type { components } from "../types/openapi.js";
-import type { InvoiceEmbedInput } from "./embed.js";
+import type { InvoiceEmbedInput, InvoicePositionEmbedInput } from "./embed.js";
 import { invoiceListQuery } from "./filters.js";
 import type { DocumentLayoutInput, LayoutApplyOptions, SetLayoutWorkflowResult } from "./layout.js";
 import {
@@ -129,6 +136,7 @@ import type {
   InvoiceFinalizingDelivery,
   InvoiceFinalizingPlan,
   InvoiceListOptions,
+  InvoicePositionListOptions,
   MarkSentDelivery,
   OperationData,
   OperationResult,
@@ -354,6 +362,36 @@ export class InvoicesBundle {
       )
     );
     return mapInvoiceListResult(result);
+  }
+  public async listPositions(
+    invoiceId: SevdeskIdInput,
+    options: InvoicePositionListOptions = {},
+    requestOptions?: CuratedRequestOptions
+  ): Promise<InvoicePositionListResult> {
+    const limit =
+      options.limit === undefined
+        ? undefined
+        : validatePaginationLimit(options.limit, "invoice positions list");
+    const offset =
+      options.offset === undefined
+        ? undefined
+        : validatePaginationOffset(options.offset, "invoice positions list");
+    const embed = positionEmbedQuery(options.embed);
+    const result = await this.client.raw.invoice.getInvoicePositionsById(
+      asRequest<"getInvoicePositionsById">(
+        {
+          path: { invoiceId: numericId(invoiceId, "invoice") },
+          query: {
+            ...(limit === undefined ? {} : { limit }),
+            ...(offset === undefined ? {} : { offset }),
+            ...(options.countAll === undefined ? {} : { countAll: options.countAll }),
+            ...(embed === undefined ? {} : { embed })
+          }
+        },
+        requestOptions
+      )
+    );
+    return mapInvoicePositionListResult(result);
   }
   public async get(
     invoiceId: SevdeskIdInput,
@@ -1151,6 +1189,13 @@ export class InvoicesBundle {
       ...(enshrinement === undefined ? {} : { enshrinement, enshrined: enshrinement.data })
     };
   }
+}
+
+function positionEmbedQuery(
+  embed: readonly InvoicePositionEmbedInput[] | undefined
+): string[] | undefined {
+  if (embed === undefined || embed.length === 0) return undefined;
+  return [...embed];
 }
 
 function assertDraftDocument(

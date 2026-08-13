@@ -14,8 +14,11 @@ import type {
   CreditNoteResult,
   SentCreditNoteResult
 } from "../domain/results.js";
-import type { SevdeskId, SevdeskIdInput } from "../types/references.js";
+import type { SevdeskId, SevdeskIdInput, SevdeskReference } from "../types/references.js";
+import { CreditNoteStatus } from "../enums/domain-enums.js";
 import { SevdeskConfigurationError, SevdeskResponseValidationError } from "../utils/errors.js";
+import { validateSevdeskDateString } from "../utils/validation.js";
+import type { components } from "../types/openapi.js";
 import {
   buildCreditNotePayload,
   buildDeliveryPayload,
@@ -35,7 +38,14 @@ import {
   type OpenCreditNoteResult,
   type ResetToOpenConfirmation
 } from "./document-output.js";
-import { asRequest, forwardCompatibleRequest, numericId, requireEntityId } from "./internal.js";
+import {
+  asRequest,
+  forwardCompatibleBody,
+  forwardCompatibleRequest,
+  numericId,
+  requireEntityId,
+  wireReference
+} from "./internal.js";
 import type {
   BookingInput,
   CreditNoteFactoryInput,
@@ -48,9 +58,45 @@ import type {
   StandardDelivery,
   StandardEmailDelivery,
   StandardFinalizingDelivery,
+  RequireAtLeastOne,
   WorkflowActionReceipt,
   WorkflowResult
 } from "./types.js";
+
+export interface CreditNoteUpdateFields {
+  readonly header?: string | null;
+  readonly headText?: string | null;
+  readonly footText?: string | null;
+  readonly address?: string | null;
+  readonly creditNoteDate?: string;
+  readonly currency?: string | null;
+  readonly customerInternalNote?: string | null;
+  readonly contact?: SevdeskReference<"Contact">;
+  readonly contactPerson?: SevdeskReference<"SevUser">;
+}
+
+export type CreditNoteUpdateInput = RequireAtLeastOne<CreditNoteUpdateFields>;
+
+type CreditNoteWireUpdate = components["schemas"]["Model_creditNoteUpdate"];
+
+export type CreditNoteUpdateWorkflowOperationId = "getcreditNoteById" | "updatecreditNote";
+
+export interface CreditNoteUpdateWorkflowData {
+  readonly before: SevdeskCreditNote;
+  readonly receipt: WorkflowActionReceipt<"updatecreditNote">;
+  readonly creditNote: SevdeskCreditNote;
+}
+
+export interface CreditNoteUpdateWorkflowPartial {
+  readonly before?: SevdeskCreditNote;
+  readonly receipt?: WorkflowActionReceipt<"updatecreditNote">;
+}
+
+export type CreditNoteUpdateWorkflowResult = WorkflowResult<
+  "creditNotes.update",
+  CreditNoteUpdateWorkflowData,
+  CreditNoteUpdateWorkflowOperationId
+>;
 import {
   assertNewDocumentTailIsValid,
   workflowActionReceipt,
@@ -186,6 +232,55 @@ export class CreditNotesBundle {
       )
     );
     return mapCreditNoteResult(result);
+  }
+  public async update(
+    creditNoteId: SevdeskIdInput,
+    input: CreditNoteUpdateInput,
+    requestOptions?: CuratedRequestOptions
+  ): Promise<CreditNoteUpdateWorkflowResult> {
+    const id = numericId(creditNoteId, "credit note");
+    const body = buildCreditNoteUpdatePayload(input);
+    const context = this.client.createWorkflowContext<
+      "creditNotes.update",
+      CreditNoteUpdateWorkflowOperationId,
+      CreditNoteUpdateWorkflowPartial
+    >("creditNotes.update");
+    let before: SevdeskCreditNote;
+    try {
+      const current = await context.step("load credit note before update", "getcreditNoteById", () =>
+        this.get(id, [], requestOptions)
+      );
+      before = current.data;
+    } catch (error) {
+      throw context.error(error, { partial: {} });
+    }
+    if (before.status !== "DRAFT" && before.statusCode !== CreditNoteStatus.DRAFT) {
+      throw new SevdeskConfigurationError(
+        `Only draft credit notes can be updated through the curated API (status=${before.status}, code=${before.statusCode}).`
+      );
+    }
+    const partial: {
+      before: SevdeskCreditNote;
+      receipt?: WorkflowActionReceipt<"updatecreditNote">;
+    } = { before };
+    try {
+      const updated = await context.step("update credit note", "updatecreditNote", () =>
+        this.client.raw.creditNote.updatecreditNote(
+          forwardCompatibleRequest<"updatecreditNote">(
+            { path: { creditNoteId: id }, body },
+            workflowWriteOptions(requestOptions)
+          )
+        )
+      );
+      const receipt = workflowActionReceipt("updatecreditNote", updated);
+      partial.receipt = receipt;
+      const hydrated = await context.step("load credit note after update", "getcreditNoteById", () =>
+        this.get(id, [], requestOptions)
+      );
+      return context.result({ before, receipt, creditNote: hydrated.data });
+    } catch (error) {
+      throw context.error(error, { partial });
+    }
   }
   public async create(
     input: CreditNoteFactoryInput,
@@ -515,4 +610,30 @@ function refineCreditNoteWorkflow<
     CreditNoteWorkflowFor<TPlan>,
     CreditNoteWorkflowOperationId
   >;
+}
+
+function buildCreditNoteUpdatePayload(
+  input: CreditNoteUpdateInput
+): ReturnType<typeof forwardCompatibleBody<CreditNoteWireUpdate>> {
+  if (Object.keys(input).length === 0) {
+    throw new SevdeskConfigurationError("Credit-note update must change at least one field.");
+  }
+  if (input.creditNoteDate !== undefined) {
+    validateSevdeskDateString(input.creditNoteDate, "creditNoteDate");
+  }
+  return forwardCompatibleBody<CreditNoteWireUpdate>({
+    ...(input.header === undefined ? {} : { header: input.header }),
+    ...(input.headText === undefined ? {} : { headText: input.headText }),
+    ...(input.footText === undefined ? {} : { footText: input.footText }),
+    ...(input.address === undefined ? {} : { address: input.address }),
+    ...(input.creditNoteDate === undefined ? {} : { creditNoteDate: input.creditNoteDate }),
+    ...(input.currency === undefined ? {} : { currency: input.currency }),
+    ...(input.customerInternalNote === undefined
+      ? {}
+      : { customerInternalNote: input.customerInternalNote }),
+    ...(input.contact === undefined ? {} : { contact: wireReference(input.contact) }),
+    ...(input.contactPerson === undefined
+      ? {}
+      : { contactPerson: wireReference(input.contactPerson) })
+  });
 }
