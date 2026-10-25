@@ -189,7 +189,7 @@ describe("semantic taxes", () => {
           status: VatIdStatus.VALID,
           value: "NL123456789B01",
           country: "NL",
-          checkedAt: "2026-07-31T12:00:00.000Z",
+          checkedAt: new Date().toISOString(),
           provider: "test-vies"
         }
       }
@@ -339,7 +339,7 @@ describe("German sale templates and country rates", () => {
           status: VatIdStatus.VALID,
           value: "FR12345678901",
           country: "FR",
-          checkedAt: "2026-07-31T12:00:00.000Z",
+          checkedAt: new Date().toISOString(),
           provider: "test-vies"
         }
       })

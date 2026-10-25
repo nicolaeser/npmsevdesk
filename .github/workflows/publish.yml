@@ -32,10 +32,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js 24 and npm registry
-        uses: actions/setup-node@v7.0.0
+      - name: Set up Node.js 26 and npm registry
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           registry-url: https://registry.npmjs.org
           cache: npm
           cache-dependency-path: package-lock.json
@@ -45,6 +45,10 @@ jobs:
 
       - name: Install exact dependencies
         run: npm ci
+
+      - name: Stamp development prerelease
+        if: env.CHANNEL == 'dev'
+        run: node .github/scripts/channel-version.mjs --channel dev
 
       - name: Verify release metadata
         run: npm run verify:release -- --channel "$CHANNEL"

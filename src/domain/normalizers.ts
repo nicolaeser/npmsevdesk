@@ -1,6 +1,7 @@
 import type { components } from "../types/openapi.js";
 import {
   ContactCategory,
+  EInvoiceReferenceType,
   enumName,
   InvoiceType,
   LegacyTaxType,
@@ -97,6 +98,9 @@ export function normalizeInvoice(
     readonly invoiceDate?: string | number | null;
     readonly timeToPay?: string | number | null;
     readonly reminderDeadline?: string | number | null;
+    readonly einvoiceReference?: string | null;
+    readonly propertyIsEInvoice?: boolean | null;
+    readonly propertyEInvoiceMail?: string | null;
   }
 ): SevdeskInvoice {
   const record = requireRecord(value, "invoice");
@@ -110,6 +114,11 @@ export function normalizeInvoice(
     TaxRule,
     "invoice.taxRule"
   );
+  const einvoiceReference = semanticCode(
+    invoice.einvoiceReference,
+    EInvoiceReferenceType,
+    "invoice.einvoiceReference"
+  );
   return {
     ...invoice,
     id: requiredId(id, "invoice"),
@@ -119,7 +128,8 @@ export function normalizeInvoice(
       ...(invoiceType === undefined ? {} : { invoiceType }),
       ...(sendType === undefined ? {} : { sendType }),
       ...(taxType === undefined ? {} : { taxType }),
-      ...(taxRule === undefined ? {} : { taxRule })
+      ...(taxRule === undefined ? {} : { taxRule }),
+      ...(einvoiceReference === undefined ? {} : { einvoiceReference })
     }
   };
 }
@@ -207,6 +217,8 @@ export function normalizePart(
 export function normalizeCreditNote(
   value: Omit<components["schemas"]["Model_creditNoteResponse"], "status"> & {
     readonly status?: unknown;
+    readonly propertyIsEInvoice?: boolean | null;
+    readonly propertyEInvoiceMail?: string | null;
   }
 ): SevdeskCreditNote {
   const record = requireRecord(value, "credit note");

@@ -24,6 +24,8 @@ export type InvoiceFactoryPayload = Replace<
         accountIntervall?: string | null;
         taxType?: string;
         deliveryAddressCountry?: { id: number; objectName: "StaticCountry" };
+        einvoiceReference?: string;
+        propertyEInvoiceMail?: string | null;
       }
     >;
   }
@@ -71,6 +73,8 @@ export type CreditNoteFactoryPayload = Replace<
         deliveryAddressCountry?: { id: number; objectName: "StaticCountry" };
         refSrcInvoice?: number;
         refSrcVoucher?: number;
+        propertyIsEInvoice?: boolean | null;
+        propertyEInvoiceMail?: string | null;
       }
     >;
   }

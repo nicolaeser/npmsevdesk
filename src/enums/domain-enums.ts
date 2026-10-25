@@ -110,6 +110,17 @@ export const SendType = {
   DOWNLOADED_PDF: "VPDF"
 } as const;
 
+// Not in the vendor OpenAPI; codes mirror the sevdesk web client's e-invoice reference selector.
+export const EInvoiceReferenceType = {
+  CUSTOM: "CUSTOM",
+  PROJECT: "BT-11",
+  CONTRACT: "BT-12",
+  PURCHASE_ORDER: "BT-13",
+  SALES_ORDER: "BT-14",
+  DESPATCH_ADVICE: "BT-16",
+  TENDER_OR_LOT: "BT-17"
+} as const;
+
 export const BookingType = {
   FULL_PAYMENT: "FULL_PAYMENT",
   PARTIAL: "N",
@@ -294,7 +305,9 @@ export type EnumDomain<TMap extends EnumMap> = TMap extends typeof InvoiceStatus
                                                         ? "TextTemplateTextType"
                                                         : TMap extends typeof DocumentStatus
                                                           ? "DocumentStatus"
-                                                          : never;
+                                                          : TMap extends typeof EInvoiceReferenceType
+                                                            ? "EInvoiceReferenceType"
+                                                            : never;
 
 type WidenEnumValue<TValue> =
   (TValue extends string ? string : never) | (TValue extends number ? number : never);
@@ -395,6 +408,7 @@ const enumDomainByMap = new Map<EnumMap, string>([
   [VoucherType, "VoucherType"],
   [VoucherDirection, "VoucherDirection"],
   [SendType, "SendType"],
+  [EInvoiceReferenceType, "EInvoiceReferenceType"],
   [BookingType, "BookingType"],
   [CommunicationWayType, "CommunicationWayType"],
   [CommunicationWayKeyName, "CommunicationWayKeyName"],
@@ -511,6 +525,9 @@ export type VoucherDirectionInput =
   EnumInput<typeof VoucherDirection> | RawEnumCode<"VoucherDirection", string>;
 export type SendTypeValue = EnumValue<typeof SendType>;
 export type SendTypeInput = EnumInput<typeof SendType> | RawEnumCode<"SendType", string>;
+export type EInvoiceReferenceTypeValue = EnumValue<typeof EInvoiceReferenceType>;
+export type EInvoiceReferenceTypeInput =
+  EnumInput<typeof EInvoiceReferenceType> | RawEnumCode<"EInvoiceReferenceType", string>;
 export type BookingTypeValue = EnumValue<typeof BookingType>;
 export type BookingTypeInput = EnumInput<typeof BookingType> | RawEnumCode<"BookingType", string>;
 export type CommunicationWayTypeValue = EnumValue<typeof CommunicationWayType>;

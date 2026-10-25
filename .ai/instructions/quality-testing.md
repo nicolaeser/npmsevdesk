@@ -61,7 +61,9 @@ are modified. [SDK development](sdk-development.md) must be used for API-layer r
   must not fall below `package.json#engines.npm` (`>=11.5.1`). Reproducible automation must install
   the exact lockfile with `npm ci`.
 - Test and build changes must preserve the runtime floor in `package.json#engines` and keep CI's
-  exact Node.js 24.0.0 floor plus current Node.js 24 coverage aligned with it.
+  exact Node.js 24.0.0 floor, current Node.js 24, and current Node.js 26 coverage aligned with it.
+  The quality and publish jobs run on Node.js 26. The tsup target stays `node24` so build output
+  still runs on the 24.0.0 floor.
 - Axios must remain the only runtime dependency unless an explicitly reviewed compatibility and
   release change updates the package contract and its enforced release verification.
 - Build validation must cover ESM, CommonJS, ESM declarations, CommonJS declarations, declaration
@@ -84,7 +86,8 @@ are modified. [SDK development](sdk-development.md) must be used for API-layer r
   `.github/scripts/verify-package-exports.mjs`.
 - Enforced automation: `.github/workflows/ci.yml` and `.github/workflows/publish.yml`.
 - Live-test entry points: `test/read-only.live.ts` and `test/write.live.ts`.
-- Official OpenAPI reference: `openapi/sevdesk-official-2.0.0.yaml`.
+- Official OpenAPI reference: the vendor document at `https://api.sevdesk.de/openapi.yaml`; it is
+  not checked in, and `src/types/openapi.ts` is the checked-in wire-type source.
 - Release gates: `.github/scripts/verify-release.mjs` and `.github/workflows/publish.yml`.
 
 Actual configuration and executable tests take precedence over narrative inventories.

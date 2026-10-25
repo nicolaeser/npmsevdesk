@@ -103,7 +103,10 @@ with typed references and enums, and keep `client.request()` only for ungenerate
 
 - The package must remain compatible with Node.js 24 or newer, strict TypeScript, ESM and CommonJS,
   and the matching declaration trees defined by `package.json`, `tsup.config.ts`, and
-  `tsconfig.build.json`.
+  `tsconfig.build.json`. CI also runs current Node.js 26.
+- Curated `invoices.render()` must return the live full-PDF payload (`data.kind: "pdf"`,
+  `data.pdf`) and must not send `getAsPdf` or model `pages` / `thumbs`. Layout updates must not
+  send `getAsPdf`. Raw types stay on the checked-in OpenAPI oneOf until that document changes.
 - Raw requests and results must remain wire-shaped. Curated conveniences must not leak into raw
   types or mutate unchanged response evidence.
 - Unknown future response codes must remain observable. Known semantic APIs must not be widened to
@@ -123,9 +126,9 @@ with typed references and enums, and keep `client.request()` only for ungenerate
 
 The source that owns the question must be used in this order:
 
-1. Wire paths, parameters, bodies, and responses:
-   `openapi/sevdesk-official-2.0.0.yaml` and the checked-in raw resources in
-   `src/resources`.
+1. Wire paths, parameters, bodies, and responses: the vendor document at
+   `https://api.sevdesk.de/openapi.yaml`, the checked-in `src/types/openapi.ts`, and the raw
+   resources in `src/resources`.
 2. Exported behavior: `src/client`, `src/resources`, `src/types`, `src/enums`, `src/domain`,
    `src/lookup`, `src/taxes`, `src/bundles`, and the public entry files under `src/`.
 3. Executable expectations: `test/` and the compile-checked programs in `examples/`.

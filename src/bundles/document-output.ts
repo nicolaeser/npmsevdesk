@@ -41,33 +41,17 @@ type InvoiceRenderParameters = InvoiceRenderWire extends { parameters?: infer TP
   ? TParameters
   : never;
 
-export interface InvoiceRenderPdfData {
+export interface InvoiceRenderData {
   readonly kind: "pdf";
   readonly pdf: string;
   readonly docId?: string;
   readonly parameters?: InvoiceRenderParameters;
 }
 
-export interface InvoiceRenderMetadataData {
-  readonly kind: "metadata";
-  readonly docId?: string;
-  readonly pages?: number;
-  readonly thumbs?: readonly unknown[];
-  readonly parameters?: InvoiceRenderParameters;
-}
+export type InvoiceRenderResult = CuratedOperationResult<"invoiceRender", InvoiceRenderData>;
 
-export type InvoiceRenderData<TGetAsPdf extends boolean> = TGetAsPdf extends true
-  ? InvoiceRenderPdfData
-  : InvoiceRenderMetadataData;
-
-export type InvoiceRenderResult<TGetAsPdf extends boolean = false> = CuratedOperationResult<
-  "invoiceRender",
-  InvoiceRenderData<TGetAsPdf>
->;
-
-export interface InvoiceRenderOptions<TGetAsPdf extends boolean = false> {
+export interface InvoiceRenderOptions {
   readonly forceReload?: boolean;
-  readonly getAsPdf?: TGetAsPdf;
 }
 
 export type DraftInvoiceResult = CuratedOperationResult<"invoiceResetToDraft", SevdeskInvoice>;
@@ -139,44 +123,22 @@ export function mapInvoiceXmlResult(
   return mapResultData(result, xml);
 }
 
-export function mapInvoiceRenderResult<TGetAsPdf extends boolean>(
-  result: ResultFor<operations["invoiceRender"]>,
-  getAsPdf: TGetAsPdf
-): InvoiceRenderResult<TGetAsPdf> {
+export function mapInvoiceRenderResult(
+  result: ResultFor<operations["invoiceRender"]>
+): InvoiceRenderResult {
   if (!isRecord(result.data)) {
     throw new SevdeskResponseValidationError("sevdesk returned invalid invoice render data.", {
       value: result.data
     });
   }
-  const shared = renderSharedData(result.data);
-  if (getAsPdf) {
-    const pdf = result.data.pdf;
-    if (typeof pdf !== "string" || pdf.length === 0) {
-      throw new SevdeskResponseValidationError(
-        "sevdesk returned no PDF content although getAsPdf was requested.",
-        { value: result.data }
-      );
-    }
-    return mapResultData(result, { kind: "pdf", pdf, ...shared }) as InvoiceRenderResult<TGetAsPdf>;
+  const pdf = result.data.pdf;
+  if (typeof pdf !== "string" || pdf.length === 0) {
+    throw new SevdeskResponseValidationError(
+      "sevdesk returned no PDF content for the rendered invoice.",
+      { value: result.data }
+    );
   }
-  const pages = result.data.pages;
-  if (pages !== undefined && (typeof pages !== "number" || !Number.isFinite(pages))) {
-    throw new SevdeskResponseValidationError("sevdesk returned an invalid rendered page count.", {
-      value: result.data
-    });
-  }
-  const thumbs = result.data.thumbs;
-  if (thumbs !== undefined && !Array.isArray(thumbs)) {
-    throw new SevdeskResponseValidationError("sevdesk returned invalid invoice thumbnails.", {
-      value: result.data
-    });
-  }
-  return mapResultData(result, {
-    kind: "metadata",
-    ...shared,
-    ...(pages === undefined ? {} : { pages }),
-    ...(thumbs === undefined ? {} : { thumbs })
-  }) as unknown as InvoiceRenderResult<TGetAsPdf>;
+  return mapResultData(result, { kind: "pdf", pdf, ...renderSharedData(result.data) });
 }
 
 export function mapDraftInvoiceResult(

@@ -16,6 +16,11 @@ updates:
         update-types:
           - minor
           - patch
+    ignore:
+      # tsup 9 requires Node.js ^24.11.0 and fails the Node.js 24.0.0 CI floor.
+      - dependency-name: tsup
+        update-types:
+          - version-update:semver-major
 
   - package-ecosystem: github-actions
     directory: /

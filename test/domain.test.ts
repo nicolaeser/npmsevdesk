@@ -193,4 +193,53 @@ describe("curated domain normalization", () => {
       known: false
     });
   });
+  it("reads e-invoice reference types without changing the wire value", () => {
+    const invoice = normalizeInvoice({
+      id: "42",
+      objectName: "Invoice",
+      status: "100",
+      customerInternalNote: "PO-4711",
+      einvoiceReference: "BT-13"
+    });
+    expect(invoice.einvoiceReference).toBe("BT-13");
+    expect(invoice.customerInternalNote).toBe("PO-4711");
+    expect(invoice.semantic.einvoiceReference).toEqual({
+      name: "PURCHASE_ORDER",
+      code: "BT-13",
+      known: true
+    });
+    const futureReference = normalizeInvoice({
+      id: "43",
+      objectName: "Invoice",
+      status: "100",
+      einvoiceReference: "BT-15"
+    });
+    expect(futureReference.semantic.einvoiceReference).toEqual({
+      name: "UNKNOWN",
+      code: "BT-15",
+      known: false
+    });
+    const withoutReference = normalizeInvoice({ id: "44", objectName: "Invoice", status: "100" });
+    expect(withoutReference.semantic).not.toHaveProperty("einvoiceReference");
+  });
+  it("keeps e-invoice mail and credit-note flags on the normalized document", () => {
+    const invoice = normalizeInvoice({
+      id: "42",
+      objectName: "Invoice",
+      status: "100",
+      propertyIsEInvoice: true,
+      propertyEInvoiceMail: "billing@example.com"
+    });
+    expect(invoice.propertyIsEInvoice).toBe(true);
+    expect(invoice.propertyEInvoiceMail).toBe("billing@example.com");
+    const creditNote = normalizeCreditNote({
+      id: "10",
+      objectName: "CreditNote",
+      status: "100",
+      propertyIsEInvoice: false,
+      propertyEInvoiceMail: "cn@example.com"
+    });
+    expect(creditNote.propertyIsEInvoice).toBe(false);
+    expect(creditNote.propertyEInvoiceMail).toBe("cn@example.com");
+  });
 });

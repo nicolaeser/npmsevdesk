@@ -123,7 +123,8 @@ operations, [SDK development](sdk-development.md) for operation selection or pub
   `result.data.applied`, and partial evidence must be read from a workflow error.
 - Invoice and credit-note `getPdf()` must preserve the safe send-state default unless
   `markAsDownloaded` expresses an intended write. Order `getPdf()` requires
-  `{ confirmCommit: true }`. Invoice `render()` is a write, not a read helper.
+  `{ confirmCommit: true }`. Invoice `render()` is a write, not a read helper. It returns the full
+  PDF on `data.pdf`.
 
 ### Live safety
 

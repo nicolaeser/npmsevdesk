@@ -22,7 +22,7 @@ import { validateSevdeskDateString } from "../utils/validation.js";
 import { buildDeliveryPayload, buildEntityReference, buildOrderPayload } from "./builders.js";
 import type { OrderEmbedInput } from "./embed.js";
 import { orderListQuery } from "./filters.js";
-import type { DocumentLayoutInput, LayoutApplyOptions, SetLayoutWorkflowResult } from "./layout.js";
+import type { DocumentLayoutInput, SetLayoutWorkflowResult } from "./layout.js";
 import {
   mapCreatedContractNoteResult,
   mapCreatedPackingListResult,
@@ -329,10 +329,9 @@ export class OrdersBundle {
   public setLayout<const TLayout extends DocumentLayoutInput>(
     orderId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"order", TLayout>> {
-    return this.client.layout.setOrderLayout(orderId, layout, options, requestOptions);
+    return this.client.layout.setOrderLayout(orderId, layout, requestOptions);
   }
   public async getPdf(
     orderId: SevdeskIdInput,

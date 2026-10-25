@@ -9,6 +9,7 @@ import type {
   ContactCreateInput,
   FinalisingMarkSentDelivery,
   InvoiceFinalisingPlan,
+  CreditNoteFactoryInput,
   InvoiceFactoryInput,
   InvoicePositionInput,
   StandardEmailDelivery,
@@ -58,6 +59,49 @@ const recurringInvoice = {
   positions: [invoicePosition]
 } satisfies InvoiceFactoryInput;
 void recurringInvoice;
+
+const eInvoiceReferenceInvoice = {
+  invoice: {
+    ...invoice,
+    propertyIsEInvoice: true,
+    customerInternalNote: "PO-4711",
+    einvoiceReference: "purchase-order",
+    propertyEInvoiceMail: "billing@example.com"
+  },
+  positions: [invoicePosition]
+} satisfies InvoiceFactoryInput;
+void eInvoiceReferenceInvoice;
+
+const eInvoiceCreditNote = {
+  creditNote: {
+    creditNoteDate: "2026-07-30",
+    contact: refs.contact(1),
+    contactPerson: refs.sevUser(2),
+    currency: "EUR",
+    propertyIsEInvoice: true,
+    propertyEInvoiceMail: "cn@example.com",
+    tax: taxes.manual.sales({
+      bookkeepingSystem: "2.0",
+      taxRule: TaxRule.STANDARD_TAXABLE
+    })
+  },
+  positions: [invoicePosition]
+} satisfies CreditNoteFactoryInput;
+void eInvoiceCreditNote;
+
+const futureEInvoiceReference: InvoiceFactoryInput["invoice"]["einvoiceReference"] = rawEnumCode(
+  "EInvoiceReferenceType",
+  "BT-15"
+);
+void futureEInvoiceReference;
+
+// @ts-expect-error unknown e-invoice reference codes require the branded raw escape hatch
+const unknownEInvoiceReference: InvoiceFactoryInput["invoice"]["einvoiceReference"] = "BT-15";
+void unknownEInvoiceReference;
+
+const wrongDomainEInvoiceReference = rawEnumCode("SendType", "BT-15");
+// @ts-expect-error raw escape hatches cannot cross enum domains
+void (wrongDomainEInvoiceReference satisfies InvoiceFactoryInput["invoice"]["einvoiceReference"]);
 
 const knownStatus: InvoiceFactoryInput["invoice"]["status"] = 100;
 void knownStatus;

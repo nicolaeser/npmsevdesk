@@ -24,6 +24,11 @@ async function verifyCuratedAndRawContracts(): Promise<void> {
     const correlatedTypeCode: "RE" = invoiceType.code;
     void correlatedTypeCode;
   }
+  const eInvoiceReference = invoice?.semantic.einvoiceReference;
+  if (eInvoiceReference?.known && eInvoiceReference.name === "PURCHASE_ORDER") {
+    const correlatedReferenceCode: "BT-13" = eInvoiceReference.code;
+    void correlatedReferenceCode;
+  }
   const wireStatus: "50" | "100" | "200" | "500" | "750" | "1000" | undefined =
     curated.objects[0]?.status;
   void wireStatus;
@@ -152,7 +157,17 @@ async function verifyCuratedAndRawContracts(): Promise<void> {
   await client.reports.creditNotes();
   // @ts-expect-error deprecated DATEV remains raw-only
   await client.exports.datevDeprecated();
-  await client.creditNotes.update(8, { header: "Updated" });
+  await client.invoices.update(42, {
+    propertyIsEInvoice: true,
+    customerInternalNote: "PO-4711",
+    einvoiceReference: "purchase-order",
+    propertyEInvoiceMail: "billing@example.com"
+  });
+  await client.creditNotes.update(8, {
+    header: "Updated",
+    propertyIsEInvoice: true,
+    propertyEInvoiceMail: null
+  });
   await client.vouchers.update(5, { description: "Updated" });
   const templates = await client.textTemplates.list({ objectType: "RE" });
   const textTemplateId: string | undefined = templates.data[0]?.id;
