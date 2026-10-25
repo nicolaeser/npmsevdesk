@@ -21,10 +21,13 @@ checker. Broken links and unexercised branches therefore require separate review
 
 ## Same version is not rebuilt or retagged between channels
 
-A `package.json` version can be published only once. `development` publishes only prereleases as
-`dev`. `main` publishes only new stable versions as `latest`. Trusted publishing can publish a
-tarball with `--tag`; it cannot add extra `dist-tag` aliases or later move `latest` onto a
-version first published as `dev`. Evidence: `.github/scripts/resolve-publish.mjs` and
+A published npm version can be published only once. `dev/<topic>` branches are not a publish
+channel. `development` stamps `{package.json version}-vdev.YYYY.M.D.<sha7>` from the commit date
+and the first 7 SHA characters, then publishes that prerelease with dist-tag `dev` and alias
+`dev-<sha7>`. Month and day are unpadded because a zero-padded SemVer identifier is invalid, and
+an all-digit SHA is prefixed with `s` for the same reason. `main` publishes the stable
+`package.json` version as `latest`. `latest` is not moved onto a version first published as `dev`.
+Evidence: `.github/scripts/channel-version.mjs`, `.github/scripts/resolve-publish.mjs`, and
 `.github/workflows/publish.yml`.
 
 ## Release audit and tarball checks are partial
