@@ -22,10 +22,12 @@ checker. Broken links and unexercised branches therefore require separate review
 ## Same version is not rebuilt or retagged between channels
 
 A published npm version can be published only once. `dev/<topic>` branches are not a publish
-channel. `development` stamps `{package.json version}-vdev.YYYY.M.D.<sha7>` from the commit date
-and the first 7 SHA characters, then publishes that prerelease with dist-tag `dev` and alias
-`dev-<sha7>`. Month and day are unpadded because a zero-padded SemVer identifier is invalid, and
-an all-digit SHA is prefixed with `s` for the same reason. `main` publishes the stable
+channel. `development` stamps `YYYY.M.D-vdev.<sha7>` from the commit date and the first 7 SHA
+characters, then publishes that prerelease with dist-tag `dev`. The version does not keep the
+`package.json` release number. Month and day are unpadded because SemVer forbids leading zeros,
+and an all-digit SHA is prefixed with `s` for the same reason. A separate `dev-<sha7>` dist-tag
+is not set: trusted publishing does not grant dist-tag access, and the pinned npm 11.17.0 is
+below the 11.21.0 CLI that can do it. The version string is the pin. `main` publishes the stable
 `package.json` version as `latest`. `latest` is not moved onto a version first published as `dev`.
 Evidence: `.github/scripts/channel-version.mjs`, `.github/scripts/resolve-publish.mjs`, and
 `.github/workflows/publish.yml`.

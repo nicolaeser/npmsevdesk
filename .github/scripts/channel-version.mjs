@@ -4,10 +4,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = new URL("../../", import.meta.url);
 
-export function developmentVersion(baseVersion, commitDate, fullSha) {
-  if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)$/u.test(baseVersion)) {
-    throw new Error(`Base version must be stable SemVer, received ${JSON.stringify(baseVersion)}.`);
-  }
+export function developmentVersion(commitDate, fullSha) {
   const date = /^(\d{4})-(\d{2})-(\d{2})$/u.exec(commitDate);
   if (date === null) {
     throw new Error(`Commit date must be YYYY-MM-DD, received ${JSON.stringify(commitDate)}.`);
@@ -20,18 +17,11 @@ export function developmentVersion(baseVersion, commitDate, fullSha) {
   const day = String(Number(date[3]));
   const sha7 = fullSha.slice(0, 7);
   const shaId = /^[0-9]+$/u.test(sha7) ? `s${sha7}` : sha7;
-  const version = `${baseVersion}-vdev.${year}.${month}.${day}.${shaId}`;
-  if (!/^[A-Za-z0-9][A-Za-z0-9._+-]{0,63}$/u.test(version)) {
-    throw new Error(`Development version ${version} is not a valid release tag.`);
+  const version = `${year}.${month}.${day}-vdev.${shaId}`;
+  if (!/^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/u.test(version)) {
+    throw new Error(`Development version ${version} is not valid SemVer.`);
   }
   return version;
-}
-
-export function developmentDistTag(fullSha) {
-  if (!/^[0-9a-f]{40}$/u.test(fullSha)) {
-    throw new Error(`Commit SHA must be 40 hex characters, received ${JSON.stringify(fullSha)}.`);
-  }
-  return `dev-${fullSha.slice(0, 7)}`;
 }
 
 export function replaceLeadingVersions(source, fromVersion, toVersion, count) {
@@ -60,13 +50,12 @@ if (invokedDirectly) {
   const packageJson = JSON.parse(await readFile(packagePath, "utf8"));
   const fullSha = git(["rev-parse", "HEAD"]);
   const commitDate = git(["show", "-s", "--format=%cs", "HEAD"]);
-  const version = developmentVersion(packageJson.version, commitDate, fullSha);
+  const version = developmentVersion(commitDate, fullSha);
   const packageSource = await readFile(packagePath, "utf8");
   const lockSource = await readFile(lockPath, "utf8");
   await writeFile(packagePath, replaceLeadingVersions(packageSource, packageJson.version, version, 1));
   await writeFile(lockPath, replaceLeadingVersions(lockSource, packageJson.version, version, 2));
   process.stdout.write(`version=${version}\n`);
-  process.stdout.write(`dev_tag=${developmentDistTag(fullSha)}\n`);
 }
 
 function git(args) {

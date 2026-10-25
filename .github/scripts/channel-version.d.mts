@@ -1,10 +1,4 @@
-export function developmentVersion(
-  baseVersion: string,
-  commitDate: string,
-  fullSha: string
-): string;
-
-export function developmentDistTag(fullSha: string): string;
+export function developmentVersion(commitDate: string, fullSha: string): string;
 
 export function replaceLeadingVersions(
   source: string,
