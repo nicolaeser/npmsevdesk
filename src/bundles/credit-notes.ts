@@ -23,11 +23,12 @@ import {
   buildCreditNotePayload,
   buildDeliveryPayload,
   buildEntityReference,
-  buildInvoiceBookingPayload
+  buildInvoiceBookingPayload,
+  normalizeEInvoiceMail
 } from "./builders.js";
 import type { CreditNoteEmbedInput } from "./embed.js";
 import { creditNoteListQuery } from "./filters.js";
-import type { DocumentLayoutInput, LayoutApplyOptions, SetLayoutWorkflowResult } from "./layout.js";
+import type { DocumentLayoutInput, SetLayoutWorkflowResult } from "./layout.js";
 import {
   mapDraftCreditNoteResult,
   mapOpenCreditNoteResult,
@@ -71,6 +72,8 @@ export interface CreditNoteUpdateFields {
   readonly creditNoteDate?: string;
   readonly currency?: string | null;
   readonly customerInternalNote?: string | null;
+  readonly propertyIsEInvoice?: boolean | null;
+  readonly propertyEInvoiceMail?: string | null;
   readonly contact?: SevdeskReference<"Contact">;
   readonly contactPerson?: SevdeskReference<"SevUser">;
 }
@@ -519,10 +522,9 @@ export class CreditNotesBundle {
   public setLayout<const TLayout extends DocumentLayoutInput>(
     creditNoteId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"creditNote", TLayout>> {
-    return this.client.layout.setCreditNoteLayout(creditNoteId, layout, options, requestOptions);
+    return this.client.layout.setCreditNoteLayout(creditNoteId, layout, requestOptions);
   }
   private async runTail(
     context: WorkflowContext<string, CreditNoteWorkflowOperationId>,
@@ -614,14 +616,30 @@ function refineCreditNoteWorkflow<
 
 function buildCreditNoteUpdatePayload(
   input: CreditNoteUpdateInput
-): ReturnType<typeof forwardCompatibleBody<CreditNoteWireUpdate>> {
+): ReturnType<
+  typeof forwardCompatibleBody<
+    CreditNoteWireUpdate & {
+      readonly propertyIsEInvoice?: boolean | null;
+      readonly propertyEInvoiceMail?: string | null;
+    }
+  >
+> {
   if (Object.keys(input).length === 0) {
     throw new SevdeskConfigurationError("Credit-note update must change at least one field.");
   }
   if (input.creditNoteDate !== undefined) {
     validateSevdeskDateString(input.creditNoteDate, "creditNoteDate");
   }
-  return forwardCompatibleBody<CreditNoteWireUpdate>({
+  const propertyEInvoiceMail = normalizeEInvoiceMail(
+    input.propertyEInvoiceMail,
+    "credit-note propertyEInvoiceMail"
+  );
+  return forwardCompatibleBody<
+    CreditNoteWireUpdate & {
+      readonly propertyIsEInvoice?: boolean | null;
+      readonly propertyEInvoiceMail?: string | null;
+    }
+  >({
     ...(input.header === undefined ? {} : { header: input.header }),
     ...(input.headText === undefined ? {} : { headText: input.headText }),
     ...(input.footText === undefined ? {} : { footText: input.footText }),
@@ -631,6 +649,10 @@ function buildCreditNoteUpdatePayload(
     ...(input.customerInternalNote === undefined
       ? {}
       : { customerInternalNote: input.customerInternalNote }),
+    ...(input.propertyIsEInvoice === undefined
+      ? {}
+      : { propertyIsEInvoice: input.propertyIsEInvoice }),
+    ...(propertyEInvoiceMail === undefined ? {} : { propertyEInvoiceMail }),
     ...(input.contact === undefined ? {} : { contact: wireReference(input.contact) }),
     ...(input.contactPerson === undefined
       ? {}

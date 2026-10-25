@@ -2,7 +2,7 @@ import axios from "axios";
 import { describe, expect, it } from "vitest";
 import { createSevdeskClient } from "../src/client/sevdesk-client.js";
 import { SevdeskConfigurationError, SevdeskResponseValidationError } from "../src/utils/errors.js";
-import { adapter, jsonResponse, responseError } from "./helpers.js";
+import { adapter, jsonResponse, requestJson, responseError } from "./helpers.js";
 
 describe("curated document output", () => {
   it("normalizes PDF envelopes and sends documented query parameters", async () => {
@@ -58,15 +58,28 @@ describe("curated document output", () => {
     });
     await expect(client.invoices.getPdf(1)).rejects.toBeInstanceOf(SevdeskResponseValidationError);
   });
-  it("returns input-correlated render data and required XML", async () => {
+  it("returns the rendered invoice PDF and required XML", async () => {
+    const calls: Array<{
+      readonly url?: string;
+      readonly params?: unknown;
+      readonly body?: unknown;
+    }> = [];
     const client = createSevdeskClient({
       apiToken: "test-token",
       axiosInstance: axios.create({
         adapter: adapter((config) => {
+          calls.push({
+            ...(config.url === undefined ? {} : { url: config.url }),
+            ...(config.params === undefined ? {} : { params: config.params }),
+            body: requestJson(config)
+          });
           if (config.url?.endsWith("/render")) {
-            return config.params?.getAsPdf === true
-              ? jsonResponse(config, { pdf: "UERG", docId: "pdf-doc" })
-              : jsonResponse(config, { docId: "meta-doc", pages: 2, thumbs: ["thumb"] });
+            return jsonResponse(config, {
+              pdf: "UERG",
+              docId: "pdf-doc",
+              pages: 2,
+              thumbs: ["obsolete"]
+            });
           }
           if (config.url?.endsWith("/getXml")) {
             return jsonResponse(config, { objects: '<?xml version="1.0"?><invoice/>' });
@@ -75,18 +88,28 @@ describe("curated document output", () => {
         })
       })
     });
-    const metadata = await client.invoices.render(1, { forceReload: true });
-    expect(metadata.data).toEqual({
-      kind: "metadata",
-      docId: "meta-doc",
-      pages: 2,
-      thumbs: ["thumb"]
-    });
-    const pdf = await client.invoices.render(1, { getAsPdf: true });
+    const pdf = await client.invoices.render(1, { forceReload: true });
     expect(pdf.data).toEqual({ kind: "pdf", pdf: "UERG", docId: "pdf-doc" });
+    expect(pdf.json).toMatchObject({ pdf: "UERG", pages: 2, thumbs: ["obsolete"] });
+    expect(calls[0]).toMatchObject({
+      url: "/Invoice/1/render",
+      body: { forceReload: true }
+    });
+    expect(calls[0]?.params).toBeUndefined();
     const xml = await client.invoices.getXml(1);
     expect(xml.data).toBe('<?xml version="1.0"?><invoice/>');
     expect(xml.json).toEqual({ objects: '<?xml version="1.0"?><invoice/>' });
+  });
+  it("rejects a render response that has no PDF", async () => {
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) =>
+          jsonResponse(config, { docId: "meta-doc", pages: 2, thumbs: ["thumb"] })
+        )
+      })
+    });
+    await expect(client.invoices.render(1)).rejects.toBeInstanceOf(SevdeskResponseValidationError);
   });
   it("rejects empty invoice XML", async () => {
     const client = createSevdeskClient({

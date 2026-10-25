@@ -6,6 +6,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": false,
+    "rootDir": "./src",
     "declarationDir": "./dist/types/esm",
     "types": ["node"]
   },

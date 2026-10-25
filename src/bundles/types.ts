@@ -6,6 +6,7 @@ import type {
   CreditNoteBookingCategoryInput,
   CreditNoteStatus,
   CreditNoteStatusInput,
+  EInvoiceReferenceTypeInput,
   InvoiceStatus,
   InvoiceStatusInput,
   InvoiceTypeInput,
@@ -231,6 +232,8 @@ export type InvoiceCreateInput = Omit<
   readonly sendType?: SendTypeInput | null;
   readonly accountIntervall?: RecurringIntervalInput | null;
   readonly accountNextInvoice?: number | Date | null;
+  readonly einvoiceReference?: EInvoiceReferenceTypeInput;
+  readonly propertyEInvoiceMail?: string | null;
   readonly currency: string;
   readonly status?: InvoiceStatusInput;
   readonly invoiceType?: InvoiceTypeInput;
@@ -591,6 +594,8 @@ type CreditNoteCreateBase = Omit<
   readonly addressCountry?: SevdeskReference<"StaticCountry"> | null;
   readonly deliveryAddressCountry?: SevdeskReference<"StaticCountry">;
   readonly sendType?: SendTypeInput | null;
+  readonly propertyIsEInvoice?: boolean | null;
+  readonly propertyEInvoiceMail?: string | null;
   readonly currency: string;
   readonly status?: CreditNoteStatusInput;
 };

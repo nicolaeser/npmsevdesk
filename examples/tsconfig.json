@@ -1,9 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "baseUrl": "..",
     "paths": {
-      "npmsevdesk": ["./src/index.ts"]
+      "npmsevdesk": ["../src/index.ts"]
     },
     "types": ["node"],
     "noEmit": true

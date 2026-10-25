@@ -8,7 +8,7 @@ ranges, or values such as `RE` and `INV` are involved.
 The vendor OpenAPI enumerates document-class fields. `invoiceType` is
 `RE` / `WKR` / `SR` / `MA` / `TR` / `AR` / `ER`. `orderType` is `AN` / `AB` /
 `LI`. These codes do not change when a tenant customizes printed names or
-number ranges. Evidence: `openapi/sevdesk-official-2.0.0.yaml` and
+number ranges. Evidence: `https://api.sevdesk.de/openapi.yaml` and
 `src/enums/domain-enums.ts`.
 
 ## Tenant-assigned strings are opaque

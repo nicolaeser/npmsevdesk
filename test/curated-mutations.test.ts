@@ -1,6 +1,7 @@
 import axios from "axios";
 import { describe, expect, it } from "vitest";
 import { createSevdeskClient } from "../src/client/sevdesk-client.js";
+import { EInvoiceReferenceType } from "../src/enums/domain-enums.js";
 import { SevdeskConfigurationError } from "../src/utils/errors.js";
 import { adapter, jsonResponse, requestJson } from "./helpers.js";
 
@@ -126,6 +127,112 @@ describe("curated update and delete", () => {
       SevdeskConfigurationError
     );
   });
+  it("sends e-invoice reference updates from the loaded draft without repeating unchanged fields", async () => {
+    const puts: unknown[] = [];
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) => {
+          if (String(config.url).includes("/Invoice/") && config.method === "get") {
+            return jsonResponse(config, {
+              objects: [
+                {
+                  id: "42",
+                  objectName: "Invoice",
+                  status: "100",
+                  invoiceType: "RE",
+                  propertyIsEInvoice: true,
+                  customerInternalNote: "PO-4711",
+                  einvoiceReference: "BT-13",
+                  propertyEInvoiceMail: "billing@example.com"
+                }
+              ]
+            });
+          }
+          if (String(config.url).includes("/Invoice/") && config.method === "put") {
+            const body = requestJson(config);
+            puts.push(body);
+            return jsonResponse(config, {
+              objects: [
+                {
+                  id: "42",
+                  objectName: "Invoice",
+                  status: "100",
+                  invoiceType: "RE",
+                  propertyIsEInvoice: true,
+                  customerInternalNote: "PO-4711",
+                  einvoiceReference: "BT-13",
+                  propertyEInvoiceMail: "billing@example.com"
+                }
+              ]
+            });
+          }
+          return jsonResponse(config, { objects: [] });
+        })
+      })
+    });
+    const updated = await client.invoices.update(42, {
+      einvoiceReference: "purchase-order",
+      propertyEInvoiceMail: " billing@example.com "
+    });
+    expect(puts).toEqual([
+      {
+        einvoiceReference: "BT-13",
+        propertyEInvoiceMail: "billing@example.com"
+      }
+    ]);
+    expect(updated.data.invoice).toMatchObject({
+      propertyIsEInvoice: true,
+      customerInternalNote: "PO-4711",
+      einvoiceReference: "BT-13",
+      propertyEInvoiceMail: "billing@example.com",
+      semantic: {
+        einvoiceReference: { name: "PURCHASE_ORDER", code: "BT-13", known: true }
+      }
+    });
+    puts.length = 0;
+    await expect(
+      client.invoices.update(42, {
+        einvoiceReference: EInvoiceReferenceType.PROJECT,
+        customerInternalNote: " "
+      })
+    ).rejects.toThrow(/requires the reference number in customerInternalNote/);
+    expect(puts).toEqual([]);
+    await expect(
+      client.invoices.update(42, {
+        einvoiceReference: EInvoiceReferenceType.PROJECT,
+        propertyIsEInvoice: false
+      })
+    ).rejects.toThrow(/requires propertyIsEInvoice: true/);
+    expect(puts).toEqual([]);
+    await expect(
+      client.invoices.update(42, { propertyEInvoiceMail: "not-an-email" })
+    ).rejects.toBeInstanceOf(SevdeskConfigurationError);
+    expect(puts).toEqual([]);
+    await client.invoices.update(42, { propertyIsEInvoice: false });
+    expect(puts).toEqual([{ propertyIsEInvoice: false }]);
+  });
+  it("rejects an e-invoice reference when neither the patch nor the draft is an e-invoice", async () => {
+    const methods: string[] = [];
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) => {
+          methods.push(String(config.method));
+          if (String(config.url).includes("/Invoice/") && config.method === "get") {
+            return jsonResponse(config, {
+              objects: [{ id: "42", objectName: "Invoice", status: "100", invoiceType: "RE" }]
+            });
+          }
+          return jsonResponse(config, { objects: [] });
+        })
+      })
+    });
+    await expect(
+      client.invoices.update(42, { einvoiceReference: EInvoiceReferenceType.CONTRACT })
+    ).rejects.toThrow(SevdeskConfigurationError);
+    expect(methods).toEqual(["get"]);
+  });
   it("updates and deletes only draft orders", async () => {
     let status: string | number = "100";
     const client = createSevdeskClient({
@@ -225,6 +332,63 @@ describe("curated update and delete", () => {
     await expect(client.creditNotes.update(8, { header: "nope" })).rejects.toBeInstanceOf(
       SevdeskConfigurationError
     );
+  });
+  it("sends credit-note e-invoice flags and rejects a blank recipient address", async () => {
+    const puts: unknown[] = [];
+    const client = createSevdeskClient({
+      apiToken: "test-token",
+      axiosInstance: axios.create({
+        adapter: adapter((config) => {
+          if (String(config.url).includes("/CreditNote/") && config.method === "get") {
+            return jsonResponse(config, {
+              objects: [
+                {
+                  id: "8",
+                  objectName: "CreditNote",
+                  status: "100",
+                  header: "CN-8",
+                  propertyIsEInvoice: true,
+                  propertyEInvoiceMail: "cn@example.com"
+                }
+              ]
+            });
+          }
+          if (String(config.url).includes("/CreditNote/") && config.method === "put") {
+            const body = requestJson(config);
+            puts.push(body);
+            return jsonResponse(config, {
+              objects: {
+                id: "8",
+                objectName: "CreditNote",
+                status: "100",
+                header: "CN-8",
+                propertyIsEInvoice: true,
+                propertyEInvoiceMail: "cn@example.com"
+              }
+            });
+          }
+          return jsonResponse(config, { objects: [] });
+        })
+      })
+    });
+    const updated = await client.creditNotes.update(8, {
+      propertyIsEInvoice: true,
+      propertyEInvoiceMail: " cn@example.com "
+    });
+    expect(puts).toEqual([
+      { propertyIsEInvoice: true, propertyEInvoiceMail: "cn@example.com" }
+    ]);
+    expect(updated.data.creditNote).toMatchObject({
+      propertyIsEInvoice: true,
+      propertyEInvoiceMail: "cn@example.com"
+    });
+    await expect(
+      client.creditNotes.update(8, { propertyEInvoiceMail: " " })
+    ).rejects.toBeInstanceOf(SevdeskConfigurationError);
+    expect(puts).toHaveLength(1);
+    puts.length = 0;
+    await client.creditNotes.update(8, { propertyEInvoiceMail: null });
+    expect(puts).toEqual([{ propertyEInvoiceMail: null }]);
   });
   it("updates only draft vouchers", async () => {
     let status: string | number = "50";

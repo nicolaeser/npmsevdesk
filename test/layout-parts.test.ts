@@ -26,7 +26,7 @@ describe("layout and parts curated helpers", () => {
             return jsonResponse(config, { result: "1" });
           }
           if (String(config.url).includes("/render")) {
-            return jsonResponse(config, { docId: "doc-1", pages: 1 });
+            return jsonResponse(config, { pdf: "UERG", docId: "doc-1" });
           }
           if (String(config.url).includes("/getXml")) {
             return jsonResponse(config, { objects: "<xml/>" });
