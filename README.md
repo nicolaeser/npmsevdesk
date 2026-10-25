@@ -1,3 +1,5 @@
+Agents should start at `.ai/BASE.md`.
+
 # npmsevdesk
 
 Unofficial TypeScript SDK for the [sevdesk](https://sevdesk.de) API. Axios-based, ESM and CommonJS, Node.js 24+. Not affiliated with sevdesk GmbH.
@@ -66,5 +68,3 @@ Copy-paste programs live in `examples/`. They compile against the public package
 
 Node.js 24 or newer. CI tests Node.js 24.0.0, the current Node.js 24 release, and Node.js 26.
 Axios is the only runtime dependency.
-
-Agents should start at `.ai/BASE.md`.

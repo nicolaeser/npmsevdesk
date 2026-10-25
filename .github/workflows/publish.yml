@@ -47,9 +47,8 @@ jobs:
         run: npm ci
 
       - name: Stamp development prerelease
-        id: stamp
         if: env.CHANNEL == 'dev'
-        run: node .github/scripts/channel-version.mjs --channel dev | tee -a "$GITHUB_OUTPUT"
+        run: node .github/scripts/channel-version.mjs --channel dev
 
       - name: Verify release metadata
         run: npm run verify:release -- --channel "$CHANNEL"
@@ -70,11 +69,7 @@ jobs:
         if: steps.plan.outputs.should_publish == 'true'
         env:
           DIST_TAG: ${{ steps.plan.outputs.dist_tag }}
-        run: |
-          npm publish --tag "$DIST_TAG" --provenance --access public
-          if [ "$CHANNEL" = "dev" ]; then
-            npm dist-tag add "${{ steps.plan.outputs.name }}@${{ steps.plan.outputs.version }}" "${{ steps.stamp.outputs.dev_tag }}"
-          fi
+        run: npm publish --tag "$DIST_TAG" --provenance --access public
 
       - name: Skip publish
         if: steps.plan.outputs.should_publish != 'true'
