@@ -21,6 +21,7 @@ import type { SevdeskInvoice, SevdeskInvoicePosition } from "../domain/models.js
 import {
   InvoiceFromOrderPartialType,
   InvoiceStatus,
+  type EInvoiceReferenceTypeInput,
   type InvoiceFromOrderPartialTypeInput
 } from "../enums/domain-enums.js";
 import type { SevdeskId, SevdeskIdInput, SevdeskReference } from "../types/references.js";
@@ -43,12 +44,14 @@ import {
   buildDeliveryPayload,
   buildEntityReference,
   buildInvoiceBookingPayload,
-  buildInvoicePayload
+  buildInvoicePayload,
+  normalizeEInvoiceMail,
+  resolveEInvoiceReference
 } from "./builders.js";
 import type { components } from "../types/openapi.js";
 import type { InvoiceEmbedInput, InvoicePositionEmbedInput } from "./embed.js";
 import { invoiceListQuery } from "./filters.js";
-import type { DocumentLayoutInput, LayoutApplyOptions, SetLayoutWorkflowResult } from "./layout.js";
+import type { DocumentLayoutInput, SetLayoutWorkflowResult } from "./layout.js";
 import {
   mapDraftInvoiceResult,
   mapInvoiceRenderResult,
@@ -108,6 +111,9 @@ export interface InvoiceUpdateInput {
   readonly deliveryDateUntil?: number | null;
   readonly currency?: string;
   readonly customerInternalNote?: string | null;
+  readonly propertyIsEInvoice?: boolean | null;
+  readonly propertyEInvoiceMail?: string | null;
+  readonly einvoiceReference?: EInvoiceReferenceTypeInput;
   readonly contact?: SevdeskReference<"Contact">;
   readonly contactPerson?: SevdeskReference<"SevUser">;
 }
@@ -415,7 +421,6 @@ export class InvoicesBundle {
     requestOptions?: CuratedRequestOptions
   ): Promise<InvoiceUpdateWorkflowResult> {
     const id = numericId(invoiceId, "invoice");
-    const body = buildInvoiceUpdatePayload(input);
     const context = this.client.createWorkflowContext<
       "invoices.update",
       InvoiceUpdateWorkflowOperationId,
@@ -431,6 +436,7 @@ export class InvoicesBundle {
       throw context.error(error, { partial: {} });
     }
     assertDraftDocument(before, "invoice");
+    const body = buildInvoiceUpdatePayload(input, before);
     const partial: {
       before: SevdeskInvoice;
       receipt?: WorkflowActionReceipt<"updateInvoiceById">;
@@ -728,29 +734,13 @@ export class InvoicesBundle {
   }
   public async render(
     invoiceId: SevdeskIdInput,
-    options: InvoiceRenderOptions<true>,
+    options: InvoiceRenderOptions = {},
     requestOptions?: CuratedRequestOptions
-  ): Promise<InvoiceRenderResult<true>>;
-  public async render(
-    invoiceId: SevdeskIdInput,
-    options?: InvoiceRenderOptions<false>,
-    requestOptions?: CuratedRequestOptions
-  ): Promise<InvoiceRenderResult<false>>;
-  public async render<TGetAsPdf extends boolean>(
-    invoiceId: SevdeskIdInput,
-    options: InvoiceRenderOptions<TGetAsPdf>,
-    requestOptions?: CuratedRequestOptions
-  ): Promise<InvoiceRenderResult<TGetAsPdf>>;
-  public async render(
-    invoiceId: SevdeskIdInput,
-    options: InvoiceRenderOptions<boolean> = {},
-    requestOptions?: CuratedRequestOptions
-  ): Promise<InvoiceRenderResult<boolean>> {
+  ): Promise<InvoiceRenderResult> {
     const result = await this.client.raw.invoice.invoiceRender(
       asRequest<"invoiceRender">(
         {
           path: { invoiceId: numericId(invoiceId, "invoice") },
-          ...(options.getAsPdf === undefined ? {} : { query: { getAsPdf: options.getAsPdf } }),
           ...(options.forceReload === undefined
             ? {}
             : { body: { forceReload: options.forceReload } })
@@ -758,15 +748,14 @@ export class InvoicesBundle {
         workflowWriteOptions(requestOptions)
       )
     );
-    return mapInvoiceRenderResult(result, options.getAsPdf ?? false);
+    return mapInvoiceRenderResult(result);
   }
   public setLayout<const TLayout extends DocumentLayoutInput>(
     invoiceId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"invoice", TLayout>> {
-    return this.client.layout.setInvoiceLayout(invoiceId, layout, options, requestOptions);
+    return this.client.layout.setInvoiceLayout(invoiceId, layout, requestOptions);
   }
   public async getXml(
     invoiceId: SevdeskIdInput,
@@ -1288,8 +1277,17 @@ function requirePositionInvoiceId(position: SevdeskInvoicePosition): number {
 }
 
 function buildInvoiceUpdatePayload(
-  input: InvoiceUpdateInput
-): ReturnType<typeof forwardCompatibleBody<InvoiceWireUpdate>> {
+  input: InvoiceUpdateInput,
+  before: SevdeskInvoice
+): ReturnType<
+  typeof forwardCompatibleBody<
+    InvoiceWireUpdate & {
+      readonly einvoiceReference?: string;
+      readonly propertyIsEInvoice?: boolean | null;
+      readonly propertyEInvoiceMail?: string | null;
+    }
+  >
+> {
   const keys = Object.keys(input);
   if (keys.length === 0) {
     throw new SevdeskConfigurationError("Invoice update must change at least one field.");
@@ -1307,7 +1305,32 @@ function buildInvoiceUpdatePayload(
   ) {
     throw new SevdeskConfigurationError("deliveryDateUntil must be a non-negative unix timestamp.");
   }
-  return forwardCompatibleBody<InvoiceWireUpdate>({
+  const propertyIsEInvoice =
+    input.propertyIsEInvoice !== undefined
+      ? input.propertyIsEInvoice
+      : before.propertyIsEInvoice;
+  const customerInternalNote =
+    input.customerInternalNote !== undefined
+      ? input.customerInternalNote
+      : before.customerInternalNote;
+  const einvoiceReference = resolveEInvoiceReference({
+    ...(input.einvoiceReference === undefined
+      ? {}
+      : { einvoiceReference: input.einvoiceReference }),
+    ...(propertyIsEInvoice === undefined ? {} : { propertyIsEInvoice }),
+    ...(customerInternalNote === undefined ? {} : { customerInternalNote })
+  });
+  const propertyEInvoiceMail = normalizeEInvoiceMail(
+    input.propertyEInvoiceMail,
+    "invoice propertyEInvoiceMail"
+  );
+  return forwardCompatibleBody<
+    InvoiceWireUpdate & {
+      readonly einvoiceReference?: string;
+      readonly propertyIsEInvoice?: boolean | null;
+      readonly propertyEInvoiceMail?: string | null;
+    }
+  >({
     ...(input.header === undefined ? {} : { header: input.header }),
     ...(input.headText === undefined ? {} : { headText: input.headText }),
     ...(input.footText === undefined ? {} : { footText: input.footText }),
@@ -1321,6 +1344,11 @@ function buildInvoiceUpdatePayload(
     ...(input.customerInternalNote === undefined
       ? {}
       : { customerInternalNote: input.customerInternalNote }),
+    ...(input.propertyIsEInvoice === undefined
+      ? {}
+      : { propertyIsEInvoice: input.propertyIsEInvoice }),
+    ...(propertyEInvoiceMail === undefined ? {} : { propertyEInvoiceMail }),
+    ...(einvoiceReference === undefined ? {} : { einvoiceReference }),
     ...(input.contact === undefined ? {} : { contact: wireReference(input.contact) }),
     ...(input.contactPerson === undefined
       ? {}

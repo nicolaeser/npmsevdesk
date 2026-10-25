@@ -38,20 +38,15 @@ try {
   if (process.env.SEVDESK_ALLOW_DOCUMENT_WRITES === "true") {
     const template = templates.data[0];
     if (!template) throw new Error("The tenant has no invoice template.");
-    const layout = await client.invoices.setLayout(
-      invoiceId,
-      {
-        template: template.id,
-        language: LayoutLanguage.GERMAN,
-        payPal: LayoutPayPalMode.DISABLED
-      },
-      { getAsPdf: false }
-    );
+    const layout = await client.invoices.setLayout(invoiceId, {
+      template: template.id,
+      language: LayoutLanguage.GERMAN,
+      payPal: LayoutPayPalMode.DISABLED
+    });
     console.log(layout.data.applied.template.receipt.performed);
     console.log(layout.data.applied.language.value);
     const rendered = await client.invoices.render(invoiceId, {
-      forceReload: true,
-      getAsPdf: true
+      forceReload: true
     });
     console.log(rendered.data.kind, rendered.data.pdf.length);
   }

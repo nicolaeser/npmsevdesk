@@ -4,6 +4,7 @@ import type {
   EnumValue,
   EnumKey,
   ContactCategory,
+  EInvoiceReferenceType,
   InvoiceType,
   LegacyTaxType,
   OrderType,
@@ -50,6 +51,9 @@ type InvoiceBoundaryWire = Omit<
   readonly invoiceDate?: string | number | null;
   readonly timeToPay?: string | number | null;
   readonly reminderDeadline?: string | number | null;
+  readonly einvoiceReference?: string | null;
+  readonly propertyIsEInvoice?: boolean | null;
+  readonly propertyEInvoiceMail?: string | null;
 };
 
 export type SemanticCode<TMap extends EnumMap> =
@@ -102,6 +106,7 @@ export type SevdeskInvoice = Readonly<
       readonly sendType?: SendSemanticCode;
       readonly taxType?: SemanticCode<typeof LegacyTaxType>;
       readonly taxRule?: SemanticCode<typeof TaxRule>;
+      readonly einvoiceReference?: SemanticCode<typeof EInvoiceReferenceType>;
     };
   }
 >;
@@ -129,7 +134,13 @@ export type SevdeskVoucher = Readonly<
 >;
 
 export type SevdeskCreditNote = Readonly<
-  WithNormalizedStatus<WithIdentity<CreditNoteWire, "CreditNote">, CreditNoteNormalizedStatus> & {
+  WithNormalizedStatus<
+    WithIdentity<CreditNoteWire, "CreditNote"> & {
+      readonly propertyIsEInvoice?: boolean | null;
+      readonly propertyEInvoiceMail?: string | null;
+    },
+    CreditNoteNormalizedStatus
+  > & {
     readonly semantic: {
       readonly sendType?: SendSemanticCode;
       readonly taxType?: SemanticCode<typeof LegacyTaxType>;

@@ -4,6 +4,8 @@ import {
   ContactStatus,
   CreditNoteBookingCategory,
   CreditNoteStatus,
+  EInvoiceReferenceType,
+  type EInvoiceReferenceTypeInput,
   InvoiceStatus,
   InvoiceType,
   LegacyTaxType,
@@ -260,6 +262,45 @@ function buildPersonContact(
   };
 }
 
+export function resolveEInvoiceReference(input: {
+  readonly einvoiceReference?: EInvoiceReferenceTypeInput;
+  readonly propertyIsEInvoice?: boolean | null;
+  readonly customerInternalNote?: string | null;
+}): string | undefined {
+  if (input.einvoiceReference === undefined) return undefined;
+  const resolved = stringEnumCode(
+    EInvoiceReferenceType,
+    input.einvoiceReference,
+    "e-invoice reference"
+  );
+  if (resolved !== EInvoiceReferenceType.CUSTOM) {
+    if (input.propertyIsEInvoice !== true) {
+      throw new SevdeskConfigurationError(
+        "An e-invoice reference type other than CUSTOM requires propertyIsEInvoice: true."
+      );
+    }
+    if (typeof input.customerInternalNote !== "string" || !input.customerInternalNote.trim()) {
+      throw new SevdeskConfigurationError(
+        "An e-invoice reference type other than CUSTOM requires the reference number in customerInternalNote."
+      );
+    }
+  }
+  return resolved;
+}
+
+export function normalizeEInvoiceMail(
+  value: string | null | undefined,
+  label: string
+): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const mail = value.trim();
+  if (mail.length === 0 || !mail.includes("@") || /\s/u.test(mail)) {
+    throw new SevdeskConfigurationError(`${label} must be an e-mail address.`);
+  }
+  return mail;
+}
+
 export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
   input: TInput
 ): ForwardCompatibleBody<InvoiceFactoryPayload> {
@@ -286,10 +327,25 @@ export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
     sendType,
     accountIntervall,
     accountNextInvoice,
+    einvoiceReference,
+    propertyEInvoiceMail,
     ...rawInvoice
   } = input.invoice;
   assertCuratedTaxInput(tax);
   const invoice = omitServerManagedCreateFields(rawInvoice, invoiceReadOnlyFields);
+  const resolvedEInvoiceReference = resolveEInvoiceReference({
+    ...(einvoiceReference === undefined ? {} : { einvoiceReference }),
+    ...(invoice.propertyIsEInvoice === undefined
+      ? {}
+      : { propertyIsEInvoice: invoice.propertyIsEInvoice }),
+    ...(invoice.customerInternalNote === undefined
+      ? {}
+      : { customerInternalNote: invoice.customerInternalNote })
+  });
+  const resolvedEInvoiceMail = normalizeEInvoiceMail(
+    propertyEInvoiceMail,
+    "invoice propertyEInvoiceMail"
+  );
   const normalizedInvoiceType = enumCode(
     InvoiceType,
     invoiceType ?? InvoiceType.NORMAL,
@@ -369,7 +425,11 @@ export function buildInvoicePayload<const TInput extends InvoiceFactoryInput>(
               accountNextInvoice === null
                 ? null
                 : validateUnixTimestamp(accountNextInvoice, "invoice accountNextInvoice")
-          })
+          }),
+      ...(resolvedEInvoiceReference === undefined
+        ? {}
+        : { einvoiceReference: resolvedEInvoiceReference }),
+      ...(resolvedEInvoiceMail === undefined ? {} : { propertyEInvoiceMail: resolvedEInvoiceMail })
     },
     invoicePosSave: input.positions.map(({ unity, part, ...position }, index) => {
       const fields = omitServerManagedCreateFields(position, invoicePositionReadOnlyFields);
@@ -673,6 +733,8 @@ export function buildCreditNotePayload<const TInput extends CreditNoteFactoryInp
     addressCountry,
     deliveryAddressCountry,
     sendType,
+    propertyIsEInvoice,
+    propertyEInvoiceMail,
     ...rawCreditNote
   } = input.creditNote;
   assertCuratedTaxInput(tax);
@@ -699,6 +761,10 @@ export function buildCreditNotePayload<const TInput extends CreditNoteFactoryInp
     normalizedBookingCategory,
     refSrcInvoice,
     refSrcVoucher
+  );
+  const resolvedEInvoiceMail = normalizeEInvoiceMail(
+    propertyEInvoiceMail,
+    "credit-note propertyEInvoiceMail"
   );
   const resolvedSmallSettlement =
     creditNote.smallSettlement ??
@@ -750,7 +816,9 @@ export function buildCreditNotePayload<const TInput extends CreditNoteFactoryInp
         : {
             sendType:
               sendType === null ? null : stringEnumCode(SendType, sendType, "credit-note send type")
-          })
+          }),
+      ...(propertyIsEInvoice === undefined ? {} : { propertyIsEInvoice }),
+      ...(resolvedEInvoiceMail === undefined ? {} : { propertyEInvoiceMail: resolvedEInvoiceMail })
     },
     creditNotePosSave: input.positions.map(({ unity, part, ...position }, index) => {
       const fields = omitServerManagedCreateFields(position, creditNotePositionReadOnlyFields);

@@ -59,10 +59,6 @@ export interface DocumentLayoutFields {
 
 export type DocumentLayoutInput = RequireAtLeastOne<DocumentLayoutFields>;
 
-export interface LayoutApplyOptions {
-  readonly getAsPdf?: boolean;
-}
-
 export interface LayoutTemplateListOptions {
   readonly type?: LayoutTemplateType;
 }
@@ -239,7 +235,6 @@ export class LayoutBundle {
   public setInvoiceLayout<const TLayout extends DocumentLayoutInput>(
     invoiceId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"invoice", TLayout>> {
     const id = numericId(invoiceId, "invoice");
@@ -254,7 +249,6 @@ export class LayoutBundle {
           asRequest<"updateInvoiceTemplate">(
             {
               path: { invoiceId: id },
-              ...(options.getAsPdf === undefined ? {} : { query: { getAsPdf: options.getAsPdf } }),
               body: pair
             },
             writeOptions
@@ -265,7 +259,6 @@ export class LayoutBundle {
   public setOrderLayout<const TLayout extends DocumentLayoutInput>(
     orderId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"order", TLayout>> {
     const id = numericId(orderId, "order");
@@ -280,7 +273,6 @@ export class LayoutBundle {
           asRequest<"updateOrderTemplate">(
             {
               path: { orderId: id },
-              ...(options.getAsPdf === undefined ? {} : { query: { getAsPdf: options.getAsPdf } }),
               body: pair
             },
             writeOptions
@@ -291,7 +283,6 @@ export class LayoutBundle {
   public setCreditNoteLayout<const TLayout extends DocumentLayoutInput>(
     creditNoteId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<"creditNote", TLayout>> {
     const id = numericId(creditNoteId, "credit note");
@@ -306,7 +297,6 @@ export class LayoutBundle {
           asRequest<"updateCreditNoteTemplate">(
             {
               path: { creditNoteId: id },
-              ...(options.getAsPdf === undefined ? {} : { query: { getAsPdf: options.getAsPdf } }),
               body: pair
             },
             writeOptions
@@ -321,20 +311,19 @@ export class LayoutBundle {
     document: TDocument,
     documentId: SevdeskIdInput,
     layout: TLayout,
-    options: LayoutApplyOptions = {},
     requestOptions?: CuratedRequestOptions
   ): Promise<SetLayoutWorkflowResult<TDocument, TLayout>> {
     switch (document) {
       case "invoice":
-        return this.setInvoiceLayout(documentId, layout, options, requestOptions) as Promise<
+        return this.setInvoiceLayout(documentId, layout, requestOptions) as Promise<
           SetLayoutWorkflowResult<TDocument, TLayout>
         >;
       case "order":
-        return this.setOrderLayout(documentId, layout, options, requestOptions) as Promise<
+        return this.setOrderLayout(documentId, layout, requestOptions) as Promise<
           SetLayoutWorkflowResult<TDocument, TLayout>
         >;
       case "creditNote":
-        return this.setCreditNoteLayout(documentId, layout, options, requestOptions) as Promise<
+        return this.setCreditNoteLayout(documentId, layout, requestOptions) as Promise<
           SetLayoutWorkflowResult<TDocument, TLayout>
         >;
       default:

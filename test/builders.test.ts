@@ -10,6 +10,7 @@ import {
 import {
   enumName,
   CreditNoteBookingCategory,
+  EInvoiceReferenceType,
   InvoiceStatus,
   InvoiceType,
   OrderStatus,
@@ -204,6 +205,151 @@ describe("payload builders", () => {
         ]
       })
     ).toThrow(/Unknown InvoiceType value "INV"/);
+  });
+  it("maps e-invoice reference types and keeps the reference number in customerInternalNote", () => {
+    const invoice = {
+      invoiceDate: "2026-07-30",
+      contact: refs.contact(12),
+      contactPerson: refs.sevUser(3),
+      currency: "EUR",
+      tax: manualSalesTax()
+    };
+    const positions = [{ quantity: 1, taxRate: 19, unity: refs.unity(1), price: 1 }] as const;
+    const payload = buildInvoicePayload({
+      invoice: {
+        ...invoice,
+        propertyIsEInvoice: true,
+        customerInternalNote: "PO-4711",
+        einvoiceReference: "purchase-order"
+      },
+      positions
+    });
+    expect(payload.invoice).toMatchObject({
+      propertyIsEInvoice: true,
+      customerInternalNote: "PO-4711",
+      einvoiceReference: "BT-13"
+    });
+    expect(
+      buildInvoicePayload({
+        invoice: {
+          ...invoice,
+          propertyIsEInvoice: true,
+          customerInternalNote: "LOT-7",
+          einvoiceReference: rawEnumCode("EInvoiceReferenceType", "BT-15")
+        },
+        positions
+      }).invoice.einvoiceReference
+    ).toBe("BT-15");
+    expect(
+      buildInvoicePayload({
+        invoice: { ...invoice, einvoiceReference: EInvoiceReferenceType.CUSTOM },
+        positions
+      }).invoice.einvoiceReference
+    ).toBe("CUSTOM");
+    expect(buildInvoicePayload({ invoice, positions }).invoice).not.toHaveProperty(
+      "einvoiceReference"
+    );
+    expect(() =>
+      buildInvoicePayload({
+        invoice: {
+          ...invoice,
+          customerInternalNote: "PO-4711",
+          einvoiceReference: EInvoiceReferenceType.DESPATCH_ADVICE
+        },
+        positions
+      })
+    ).toThrow(/requires propertyIsEInvoice: true/);
+    expect(() =>
+      buildInvoicePayload({
+        invoice: {
+          ...invoice,
+          propertyIsEInvoice: true,
+          customerInternalNote: " ",
+          einvoiceReference: EInvoiceReferenceType.PROJECT
+        },
+        positions
+      })
+    ).toThrow(/reference number in customerInternalNote/);
+    expect(() =>
+      buildInvoicePayload({
+        invoice: { ...invoice, propertyIsEInvoice: true, einvoiceReference: "BT-99" as never },
+        positions
+      })
+    ).toThrow(/Unknown EInvoiceReferenceType value "BT-99"/);
+  });
+  it("accepts an e-invoice recipient address and rejects a blank one", () => {
+    const invoice = {
+      invoiceDate: "2026-07-30",
+      contact: refs.contact(12),
+      contactPerson: refs.sevUser(3),
+      currency: "EUR",
+      tax: manualSalesTax()
+    };
+    const positions = [{ quantity: 1, taxRate: 19, unity: refs.unity(1), price: 1 }] as const;
+    expect(
+      buildInvoicePayload({
+        invoice: { ...invoice, propertyEInvoiceMail: " billing@example.com " },
+        positions
+      }).invoice.propertyEInvoiceMail
+    ).toBe("billing@example.com");
+    expect(
+      buildInvoicePayload({
+        invoice: { ...invoice, propertyEInvoiceMail: null },
+        positions
+      }).invoice.propertyEInvoiceMail
+    ).toBeNull();
+    expect(buildInvoicePayload({ invoice, positions }).invoice).not.toHaveProperty(
+      "propertyEInvoiceMail"
+    );
+    for (const propertyEInvoiceMail of ["", "   ", "not-an-email", "a b@example.com"]) {
+      expect(() =>
+        buildInvoicePayload({
+          invoice: { ...invoice, propertyEInvoiceMail },
+          positions
+        })
+      ).toThrow(/invoice propertyEInvoiceMail must be an e-mail address/);
+    }
+  });
+  it("maps credit-note e-invoice flags and the recipient address", () => {
+    const creditNote = {
+      creditNoteDate: "2026-07-30",
+      contact: refs.contact(1),
+      contactPerson: refs.sevUser(2),
+      currency: "EUR",
+      tax: manualSalesTax()
+    };
+    const positions = [{ quantity: 1, price: 1, taxRate: 19, unity: refs.unity(1) }] as const;
+    expect(
+      buildCreditNotePayload({
+        creditNote: {
+          ...creditNote,
+          propertyIsEInvoice: true,
+          propertyEInvoiceMail: " cn@example.com "
+        },
+        positions
+      }).creditNote
+    ).toMatchObject({
+      propertyIsEInvoice: true,
+      propertyEInvoiceMail: "cn@example.com"
+    });
+    expect(
+      buildCreditNotePayload({
+        creditNote: { ...creditNote, propertyIsEInvoice: false, propertyEInvoiceMail: null },
+        positions
+      }).creditNote
+    ).toMatchObject({
+      propertyIsEInvoice: false,
+      propertyEInvoiceMail: null
+    });
+    expect(buildCreditNotePayload({ creditNote, positions }).creditNote).not.toHaveProperty(
+      "propertyIsEInvoice"
+    );
+    expect(() =>
+      buildCreditNotePayload({
+        creditNote: { ...creditNote, propertyEInvoiceMail: "not-an-email" },
+        positions
+      })
+    ).toThrow(/credit-note propertyEInvoiceMail must be an e-mail address/);
   });
   it("emits mandatory Factory placeholders and rejects invalid create statuses", () => {
     const invoice = {

@@ -16,8 +16,8 @@ stated activation matches the task.
 ## Knowledge
 
 - [known-limitations.md](knowledge/known-limitations.md) — Records verified unresolved repository
-  gaps and must be loaded for package validation or release work, or low-level VAT-evidence
-  decisions.
+  gaps and must be loaded for package validation, dependency, or release work, low-level
+  VAT-evidence decisions, e-invoice reference types, or invoice render responses.
 - [sdk-surface.md](knowledge/sdk-surface.md) — Maps the public client layers and naming and must
   be loaded when adopting the package or choosing between curated, lookup, tax, and raw calls.
 - [tenant-identifiers.md](knowledge/tenant-identifiers.md) — Separates official document-class

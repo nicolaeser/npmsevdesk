@@ -32,7 +32,7 @@ if (channel === "dev" && !prerelease) {
     dist_tag: "dev",
     should_publish: false,
     already_published: false,
-    skip_reason: `Stable ${name}@${version} is reserved for main/latest. Use a prerelease such as ${version}-dev.0 for @dev.`
+    skip_reason: `Stable ${name}@${version} is reserved for main/latest. development stamps ${version}-vdev.YYYY.M.D.<sha7> before publish.`
   });
   process.exit(0);
 }

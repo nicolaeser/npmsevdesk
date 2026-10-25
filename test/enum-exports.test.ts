@@ -19,6 +19,7 @@ const curatedEnumExports = [
   "VoucherType",
   "VoucherDirection",
   "SendType",
+  "EInvoiceReferenceType",
   "BookingType",
   "CommunicationWayType",
   "CommunicationWayKeyName",

@@ -16,6 +16,16 @@ Load this when adopting the package or choosing between curated, lookup, tax, an
 - Official type codes such as `InvoiceType.NORMAL` (`"RE"`) are document classes.
   Tenant invoice numbers and headings can be `INV-…` without changing that code.
   See [tenant identifiers](tenant-identifiers.md).
+- E-invoice references use `einvoiceReference` (`EInvoiceReferenceType`, e.g.
+  `PURCHASE_ORDER` = `"BT-13"`) for the type and `customerInternalNote` for the number. A type
+  other than `CUSTOM` requires `propertyIsEInvoice: true` and a non-empty note. Factory create
+  and `invoices.update()` accept the reference. An update merges the flag and note from the
+  loaded draft when the patch omits them, and sends only fields the caller set.
+  `propertyEInvoiceMail` is the recipient address on invoice and credit-note create and update;
+  `null` clears it. Credit-note create and update also accept `propertyIsEInvoice`. Reads keep
+  the wire values, and invoices expose `semantic.einvoiceReference`. `einvoiceReference` and
+  `propertyEInvoiceMail` are not in the vendor OpenAPI, and live persistence is unverified. See
+  [known limitations](known-limitations.md).
 - `client.taxes` resolves German sale plans, quotes priced lines, checks voucher compatibility, and
   can fetch experimental country rates. Prefer `resolveSale()` / `quoteSale()` over
   `resolveDigitalService()`.
@@ -35,6 +45,14 @@ Removed prerelease aliases such as `createFullContact`, `createAndFinaliseInvoic
 
 `exportDatevDepricated` is raw-only. `reports.creditNotes` is not generated. Credit-note and
 voucher curated updates are draft-only workflows matching `invoices.update`.
+
+## Document output
+
+`invoices.render()` is a write. Since 7 April 2026 it always returns the full PDF on
+`data.pdf` with `data.kind: "pdf"`. Curated calls do not send `getAsPdf` and do not expose page
+images. Layout updates also omit `getAsPdf`. Raw render types still follow the checked-in OpenAPI
+oneOf; see [known limitations](known-limitations.md). `invoices.getPdf()` remains the separate
+download endpoint.
 
 ## Results
 

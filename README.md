@@ -44,6 +44,8 @@ Curated `result.data` is the normalized view. `objects`, `json`, and `raw` stay 
 
 `InvoiceType.NORMAL` is the official `"RE"` document class. It does not change when a tenant customizes the printed invoice name or number range. `invoiceNumber` and `customerNumber` are ordinary strings (`INV-2024-0001`, `CUST-42`). See `examples/12-tenant-identifiers.ts`.
 
+For e-invoices, `einvoiceReference` sets which reference the number in `customerInternalNote` is, such as `EInvoiceReferenceType.PURCHASE_ORDER` (`"BT-13"`). Any type other than `CUSTOM` requires `propertyIsEInvoice: true` and a non-empty note. Factory create and `invoices.update()` accept it. An update uses the loaded draft when the patch omits the flag or the note, and sends only the fields the caller set. `propertyEInvoiceMail` is the recipient address on invoice and credit-note create and update; `null` clears it. Credit notes also accept `propertyIsEInvoice` on create and update. The official OpenAPI documents `propertyIsEInvoice` on invoice create, not on invoice update, credit notes, or these mail and reference fields. A live tenant has not confirmed that the API persists the extra fields.
+
 ## Writes
 
 Creating, sending, booking, deleting, and similar calls change sevdesk. Use a disposable tenant for experiments. Invoice finalization and contact create are multi-request workflows, not transactions.
@@ -56,12 +58,13 @@ Copy-paste programs live in `examples/`. They compile against the public package
 - `03-create-and-finalize-invoice.ts` — draft, send, book
 - `05-exact-lookups.ts` — customer number, IBAN, part, country
 - `08-tax-resolution-and-json.ts` — sale tax plans
-- `12-tenant-identifiers.ts` — custom numbers vs `"RE"`
+- `12-tenant-identifiers.ts` — custom numbers vs `"RE"`, e-invoice reference, mail, and credit-note flag
 - `13-sequences-users-and-dates.ts` — next numbers, users, dates, invoice positions
 - `14-remaining-curated.ts` — check accounts, transactions, tags, text templates, exports, reports
 
 ## Requirements
 
-Node.js 24 or newer. Axios is the only runtime dependency.
+Node.js 24 or newer. CI tests Node.js 24.0.0, the current Node.js 24 release, and Node.js 26.
+Axios is the only runtime dependency.
 
 Agents should start at `.ai/BASE.md`.

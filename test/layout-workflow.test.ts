@@ -56,7 +56,6 @@ describe("curated document layouts", () => {
         language: LayoutLanguage.GERMAN,
         payPal: LayoutPayPalMode.SHOW_LINK
       },
-      { getAsPdf: true },
       { retry: { attempts: 9, unsafe: true } }
     );
     expect(result.workflow).toBe("layout.invoice.set");
@@ -72,7 +71,7 @@ describe("curated document layouts", () => {
       { key: "language", value: "de_DE" },
       { key: "payPal", value: "B" }
     ]);
-    expect(calls.every((call) => JSON.stringify(call.params) === '{"getAsPdf":true}')).toBe(true);
+    expect(calls.every((call) => call.params === undefined)).toBe(true);
     expectTypeOf(result.workflow).toEqualTypeOf<"layout.invoice.set">();
     expectTypeOf(result.data.applied.template.value).toEqualTypeOf<"tpl-1">();
     expectTypeOf(result.data.applied.language.value).toEqualTypeOf<"de_DE">();

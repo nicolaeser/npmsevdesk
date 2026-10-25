@@ -32,10 +32,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Set up Node.js 24 and npm registry
-        uses: actions/setup-node@v7.0.0
+      - name: Set up Node.js 26 and npm registry
+        uses: actions/setup-node@v7.1.0
         with:
-          node-version: 24
+          node-version: 26
           registry-url: https://registry.npmjs.org
           cache: npm
           cache-dependency-path: package-lock.json
@@ -45,6 +45,11 @@ jobs:
 
       - name: Install exact dependencies
         run: npm ci
+
+      - name: Stamp development prerelease
+        id: stamp
+        if: env.CHANNEL == 'dev'
+        run: node .github/scripts/channel-version.mjs --channel dev | tee -a "$GITHUB_OUTPUT"
 
       - name: Verify release metadata
         run: npm run verify:release -- --channel "$CHANNEL"
@@ -65,7 +70,11 @@ jobs:
         if: steps.plan.outputs.should_publish == 'true'
         env:
           DIST_TAG: ${{ steps.plan.outputs.dist_tag }}
-        run: npm publish --tag "$DIST_TAG" --provenance --access public
+        run: |
+          npm publish --tag "$DIST_TAG" --provenance --access public
+          if [ "$CHANNEL" = "dev" ]; then
+            npm dist-tag add "${{ steps.plan.outputs.name }}@${{ steps.plan.outputs.version }}" "${{ steps.stamp.outputs.dev_tag }}"
+          fi
 
       - name: Skip publish
         if: steps.plan.outputs.should_publish != 'true'
